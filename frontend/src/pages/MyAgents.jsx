@@ -272,12 +272,14 @@ const MyAgents = () => {
 
                   {/* v-9 Transform Button (only if not already transformed) */}
                   {!agent.has_v9 && (
-                    <V9TransformButton
-                      onClick={(e) => handleV9Transform(agent.id, e)}
-                      isTransforming={transformingAgentId === agent.id}
-                      disabled={transformingAgentId === agent.id}
-                      className="w-full bg-[#10172a] border border-[#25365a] hover:border-[#06d6a0]/50 text-white font-semibold h-9 text-sm"
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <V9TransformButton
+                        onClick={() => handleV9Transform(agent.id)}
+                        isTransforming={transformingAgentId === agent.id}
+                        disabled={transformingAgentId === agent.id}
+                        className="w-full bg-[#10172a] border border-[#25365a] hover:border-[#06d6a0]/50 text-white font-semibold h-9 text-sm"
+                      />
+                    </div>
                   )}
                 </Card>
               </motion.div>
