@@ -3051,6 +3051,74 @@ async def get_agent(agent_id: str, http_request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/agents/my-agents")
+async def get_my_agents(
+    limit: int = 20,
+    offset: int = 0,
+    sort: str = "created_at",
+    http_request: Request = None
+):
+    """
+    Get all agents created by the current user.
+    Supports pagination, sorting, and includes token costs.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Determine sort direction
+        sort_direction = -1  # Newest first by default
+        
+        # Build query
+        query = {"user_id": user["id"]}
+        
+        # Get total count
+        total_count = await db.agents.count_documents(query)
+        
+        # Get agents with pagination
+        agents_cursor = db.agents.find(query, {"_id": 0}).sort(sort, sort_direction).skip(offset).limit(limit)
+        agents = await agents_cursor.to_list(length=limit)
+        
+        # Enrich agents with token costs from transactions
+        enriched_agents = []
+        for agent in agents:
+            # Get token transactions for this agent
+            transactions = await db.token_transactions.find({
+                "user_id": user["id"],
+                "description": {"$regex": agent["id"]}
+            }, {"_id": 0}).to_list(length=10)
+            
+            # Calculate total tokens (sum of all transactions for this agent)
+            total_tokens = sum(abs(t.get("amount", 0)) for t in transactions)
+            
+            # Extract agent name from generated_prompt (first heading)
+            agent_name = "Unnamed Agent"
+            if agent.get("generated_prompt"):
+                lines = agent["generated_prompt"].split("\n")
+                for line in lines:
+                    if line.startswith("#") and "Ω-" in line:
+                        # Extract name between Ω- and v1.0 (or -v9)
+                        agent_name = line.replace("#", "").strip()
+                        break
+            
+            enriched_agents.append({
+                **agent,
+                "total_tokens_used": total_tokens,
+                "agent_name": agent_name,
+                "has_v9": bool(agent.get("metadata", {}).get("v9_prompt"))
+            })
+        
+        return {
+            "agents": enriched_agents,
+            "total": total_count,
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching my agents: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/agent/{agent_id}/v9-transform")
 async def transform_agent_to_v9(agent_id: str, http_request: Request):
     """
