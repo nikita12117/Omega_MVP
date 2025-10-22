@@ -130,6 +130,20 @@ export default function Demo() {
     }
   }, []);
 
+  // Gating logic: Check authentication and demo expiry
+  if (!user) {
+    return <DemoActivationPrompt />;
+  }
+
+  // Check demo expiry for demo accounts
+  if (user?.is_demo && user?.demo_expires_at) {
+    const expiryTime = new Date(user.demo_expires_at);
+    const now = new Date();
+    if (now >= expiryTime) {
+      return <DemoExpiredPanel user={user} />;
+    }
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
