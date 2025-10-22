@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
   Sparkles, 
@@ -17,7 +19,13 @@ import {
   Coins,
   Loader2,
   Brain,
-  FileText
+  FileText,
+  Search,
+  Filter,
+  X,
+  Share2,
+  Link as LinkIcon,
+  Check
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -35,6 +43,13 @@ const MyAgents = () => {
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [viewingV9, setViewingV9] = useState(false);
   const [transformingAgentId, setTransformingAgentId] = useState(null);
+  
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterV9, setFilterV9] = useState('all'); // 'all', 'v9-only', 'v1-only'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'name'
+  const [sharingAgentId, setSharingAgentId] = useState(null);
+  const [copiedShareLink, setCopiedShareLink] = useState(null);
 
   // Load user first
   useEffect(() => {
@@ -162,6 +177,77 @@ const MyAgents = () => {
     }
   };
 
+  const handleShare = async (agentId, currentlyShared) => {
+    setSharingAgentId(agentId);
+
+    try {
+      if (currentlyShared) {
+        // Unshare
+        await apiClient.post(`/agent/${agentId}/unshare`);
+        
+        // Update agent in list
+        setAgents(prevAgents => 
+          prevAgents.map(agent => 
+            agent.id === agentId 
+              ? {
+                  ...agent,
+                  metadata: {
+                    ...agent.metadata,
+                    is_shared: false
+                  }
+                }
+              : agent
+          )
+        );
+        
+        toast.success('Agent je nyní soukromý');
+      } else {
+        // Share
+        const response = await apiClient.post(`/agent/${agentId}/share`);
+        const shareUrl = `${window.location.origin}/shared/${response.data.share_token}`;
+        
+        // Update agent in list
+        setAgents(prevAgents => 
+          prevAgents.map(agent => 
+            agent.id === agentId 
+              ? {
+                  ...agent,
+                  metadata: {
+                    ...agent.metadata,
+                    is_shared: true,
+                    share_token: response.data.share_token
+                  }
+                }
+              : agent
+          )
+        );
+        
+        // Copy link to clipboard
+        navigator.clipboard.writeText(shareUrl);
+        setCopiedShareLink(agentId);
+        setTimeout(() => setCopiedShareLink(null), 3000);
+        
+        toast.success('Odkaz zkopírován! Agent je nyní veřejně sdílený');
+      }
+    } catch (error) {
+      console.error('Error sharing agent:', error);
+      toast.error(error.response?.data?.detail || 'Chyba při sdílení');
+    } finally {
+      setSharingAgentId(null);
+    }
+  };
+
+  const handleCopyShareLink = (agent) => {
+    const shareToken = agent.metadata?.share_token;
+    if (shareToken) {
+      const shareUrl = `${window.location.origin}/shared/${shareToken}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedShareLink(agent.id);
+      setTimeout(() => setCopiedShareLink(null), 3000);
+      toast.success('Odkaz zkopírován!');
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('cs-CZ', { 
@@ -172,6 +258,42 @@ const MyAgents = () => {
       minute: '2-digit'
     });
   };
+
+  // Filter and search agents
+  const filteredAgents = useMemo(() => {
+    let filtered = [...agents];
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(agent =>
+        agent.agent_name?.toLowerCase().includes(query) ||
+        agent.short_description?.toLowerCase().includes(query) ||
+        agent.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply v9 filter
+    if (filterV9 === 'v9-only') {
+      filtered = filtered.filter(agent => agent.has_v9);
+    } else if (filterV9 === 'v1-only') {
+      filtered = filtered.filter(agent => !agent.has_v9);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.created_at) - new Date(a.created_at);
+      } else if (sortBy === 'oldest') {
+        return new Date(a.created_at) - new Date(b.created_at);
+      } else if (sortBy === 'name') {
+        return (a.agent_name || '').localeCompare(b.agent_name || '');
+      }
+      return 0;
+    });
+
+    return filtered;
+  }, [agents, searchQuery, filterV9, sortBy]);
 
   if (isLoadingUser || isLoading) {
     return (
@@ -192,13 +314,65 @@ const MyAgents = () => {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center gap-3">
             <FileText className="h-8 w-8 text-[#06d6a0]" />
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-semibold">Moji Agenti</h1>
               <p className="text-[#9fb4d0] mt-1">
-                {agents.length} {agents.length === 1 ? 'agent vytvořen' : 'agentů vytvořeno'}
+                {filteredAgents.length} {filteredAgents.length === 1 ? 'agent' : 'agentů'}
+                {searchQuery || filterV9 !== 'all' ? ` (filtrováno z ${agents.length})` : ''}
               </p>
             </div>
           </div>
+
+          {/* Search and Filter Bar */}
+          {agents.length > 0 && (
+            <div className="mt-4 flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#9fb4d0]" />
+                <Input
+                  type="text"
+                  placeholder="Hledat podle názvu nebo popisu..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10 bg-[#10172a] border-[#25365a] text-[#e6f1ff] placeholder:text-[#9fb4d0]/50"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#9fb4d0] hover:text-[#e6f1ff]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* V9 Filter */}
+              <Select value={filterV9} onValueChange={setFilterV9}>
+                <SelectTrigger className="w-full sm:w-48 bg-[#10172a] border-[#25365a] text-[#e6f1ff]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#10172a] border-[#25365a]">
+                  <SelectItem value="all" className="text-[#e6f1ff]">Všechny agenty</SelectItem>
+                  <SelectItem value="v9-only" className="text-[#06d6a0]">Pouze v-9</SelectItem>
+                  <SelectItem value="v1-only" className="text-[#9fb4d0]">Pouze v1</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Sort */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-48 bg-[#10172a] border-[#25365a] text-[#e6f1ff]">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#10172a] border-[#25365a]">
+                  <SelectItem value="newest" className="text-[#e6f1ff]">Nejnovější</SelectItem>
+                  <SelectItem value="oldest" className="text-[#e6f1ff]">Nejstarší</SelectItem>
+                  <SelectItem value="name" className="text-[#e6f1ff]">Podle názvu</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -219,9 +393,27 @@ const MyAgents = () => {
               Vytvořit agenta
             </Button>
           </Card>
+        ) : filteredAgents.length === 0 ? (
+          <Card className="bg-[#10172a] border-[#25365a] p-12 text-center">
+            <Search className="h-16 w-16 text-[#9fb4d0] mx-auto mb-4 opacity-50" />
+            <h2 className="text-2xl font-semibold mb-2">Žádní agenti nenalezeni</h2>
+            <p className="text-[#9fb4d0] mb-6">
+              Zkuste změnit vyhledávací kritéria nebo filtry
+            </p>
+            <Button
+              onClick={() => {
+                setSearchQuery('');
+                setFilterV9('all');
+              }}
+              variant="outline"
+              className="border-[#25365a] text-[#e6f1ff] hover:bg-[#25365a]"
+            >
+              Vymazat filtry
+            </Button>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {agents.map((agent) => (
+            {filteredAgents.map((agent) => (
               <motion.div
                 key={agent.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -281,6 +473,59 @@ const MyAgents = () => {
                       />
                     </div>
                   )}
+
+                  {/* Share Button */}
+                  <div onClick={(e) => e.stopPropagation()} className={!agent.has_v9 ? 'mt-2' : ''}>
+                    {agent.metadata?.is_shared ? (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleCopyShareLink(agent)}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-[#06d6a0] text-[#06d6a0] hover:bg-[#06d6a0]/10 h-9 text-sm"
+                        >
+                          {copiedShareLink === agent.id ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" />
+                              Zkopírováno!
+                            </>
+                          ) : (
+                            <>
+                              <LinkIcon className="h-4 w-4 mr-2" />
+                              Kopírovat odkaz
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => handleShare(agent.id, true)}
+                          disabled={sharingAgentId === agent.id}
+                          variant="outline"
+                          size="sm"
+                          className="border-[#25365a] text-[#9fb4d0] hover:bg-[#25365a] h-9 px-3"
+                        >
+                          {sharingAgentId === agent.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => handleShare(agent.id, false)}
+                        disabled={sharingAgentId === agent.id}
+                        variant="outline"
+                        className="w-full border-[#25365a] text-[#e6f1ff] hover:bg-[#25365a] h-9 text-sm"
+                      >
+                        {sharingAgentId === agent.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Share2 className="h-4 w-4 mr-2" />
+                        )}
+                        Sdílet agenta
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               </motion.div>
             ))}

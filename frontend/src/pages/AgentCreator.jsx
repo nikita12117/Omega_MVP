@@ -20,7 +20,10 @@ import {
   CheckCircle,
   ArrowRight,
   Coins,
-  FileText
+  FileText,
+  LayoutTemplate,
+  Share2,
+  QrCode
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -30,6 +33,9 @@ import DemoActivationPrompt from '@/components/demo/DemoActivationPrompt';
 import DemoExpiredPanel from '@/components/demo/DemoExpiredPanel';
 import PhoneVerificationModal from '@/components/phone/PhoneVerificationModal';
 import V9TransformButton from '@/components/V9TransformButton';
+import TemplatesDialog from '@/components/TemplatesDialog';
+import { QRCodeSVG } from 'qrcode.react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 /**
  * Ω-KOMPRESNÍ ROVNICE - Agent Creator
@@ -51,6 +57,8 @@ const AgentCreator = () => {
   const [currentStage, setCurrentStage] = useState('describe'); // describe, clarify, refine, finalize
   const [agentId, setAgentId] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   
   // Form Data
   const [description, setDescription] = useState('');
@@ -68,6 +76,13 @@ const AgentCreator = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [tokensUsed, setTokensUsed] = useState(0);
   const [progress, setProgress] = useState(0);
+
+  // Demo Ticket Sharing State
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [createdTicket, setCreatedTicket] = useState(null);
+  const [myTickets, setMyTickets] = useState([]);
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+  const [giftingStatus, setGiftingStatus] = useState(null);
 
   // Character count for description
   const maxDescriptionLength = 1000;
@@ -96,6 +111,55 @@ const AgentCreator = () => {
     loadUser();
   }, []);
 
+  // Load user's tickets if demo user
+  useEffect(() => {
+    if (user && user.is_demo) {
+      loadMyTickets();
+      loadGiftingStatus();
+    }
+  }, [user]);
+
+  const loadMyTickets = async () => {
+    try {
+      const response = await apiClient.get('/demo/my-tickets');
+      setMyTickets(response.data.tickets || []);
+    } catch (error) {
+      console.error('Error loading tickets:', error);
+    }
+  };
+
+  const loadGiftingStatus = async () => {
+    try {
+      const response = await apiClient.get('/demo/gifting-status');
+      setGiftingStatus(response.data);
+    } catch (error) {
+      console.error('Error loading gifting status:', error);
+    }
+  };
+
+  const handleCreateTicket = async () => {
+    setIsCreatingTicket(true);
+    try {
+      const response = await apiClient.post('/demo/create-ticket');
+      setCreatedTicket(response.data);
+      setShowTicketModal(true);
+      loadMyTickets();
+      loadGiftingStatus();
+      toast.success('Gift ticket vytvořen!');
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      const errorMsg = error.response?.data?.detail || 'Chyba při vytváření ticketu';
+      toast.error(errorMsg);
+    } finally {
+      setIsCreatingTicket(false);
+    }
+  };
+
+  const handleShowTicket = (ticket) => {
+    setCreatedTicket(ticket);
+    setShowTicketModal(true);
+  };
+
   // Calculate progress
   useEffect(() => {
     const stageProgress = {
@@ -118,7 +182,8 @@ const AgentCreator = () => {
 
     try {
       const response = await apiClient.post('/start-agent', {
-        description: description.trim()
+        description: description.trim(),
+        template_id: selectedTemplate?.id || null
       });
 
       setAgentId(response.data.agent_id);
@@ -142,6 +207,19 @@ const AgentCreator = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSelectTemplate = (template) => {
+    setSelectedTemplate(template);
+    // Append template preset to description
+    setDescription(prev => {
+      const trimmed = prev.trim();
+      if (trimmed) {
+        return `${template.preset_description}\n${trimmed}`;
+      }
+      return template.preset_description;
+    });
+    toast.success(`Šablona "${template.name}" vybrána`);
   };
 
   // STAGE 2: Refine with answers
@@ -369,15 +447,50 @@ const AgentCreator = () => {
                 <div className="p-3 rounded-xl bg-[#06d6a0]/10">
                   <Sparkles className="h-6 w-6 text-[#06d6a0]" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h2 className="text-2xl font-semibold">Popište svého agenta</h2>
                   <p className="text-[#9fb4d0] mt-1">
                     Řekněte nám, co by měl váš Omega Agent dělat
                   </p>
                 </div>
+                <Button
+                  onClick={() => setShowTemplatesDialog(true)}
+                  variant="outline"
+                  className="border-[#25365a] text-[#e6f1ff] hover:bg-[#25365a] gap-2"
+                >
+                  <LayoutTemplate className="h-4 w-4" />
+                  Šablony
+                </Button>
               </div>
 
               <Separator className="mb-6 bg-[#25365a]/50" />
+
+              {selectedTemplate && (
+                <div className="mb-4 p-4 bg-[#06d6a0]/10 border border-[#06d6a0]/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">{selectedTemplate.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[#06d6a0]">
+                        Použitá šablona: {selectedTemplate.name}
+                      </p>
+                      <p className="text-xs text-[#9fb4d0]">
+                        {selectedTemplate.description}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setSelectedTemplate(null);
+                        setDescription('');
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="text-[#9fb4d0] hover:text-[#e6f1ff]"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <Textarea
@@ -648,6 +761,153 @@ const AgentCreator = () => {
           }}
         />
       )}
+
+      {/* Templates Dialog */}
+      <TemplatesDialog
+        open={showTemplatesDialog}
+        onOpenChange={setShowTemplatesDialog}
+        onSelectTemplate={handleSelectTemplate}
+      />
+
+      {/* Gift Ticket Section (For Demo Users) */}
+      {user?.is_demo && giftingStatus && (
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <div className="text-center mb-6">
+            {/* Gift Ticket Button - Centered */}
+            <Button
+              onClick={handleCreateTicket}
+              disabled={isCreatingTicket || !giftingStatus.can_gift}
+              className="bg-[#06d6a0] hover:bg-[#07f0b8] text-[#0a0f1d] font-semibold h-14 px-8 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingTicket ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Creating Gift...
+                </>
+              ) : (
+                <>
+                  <Share2 className="h-5 w-5 mr-2" />
+                  🎁 Gift Ticket
+                </>
+              )}
+            </Button>
+            
+            {/* Status Info */}
+            <div className="mt-3 text-sm text-[#9fb4d0] space-y-1">
+              <div className="flex items-center justify-center gap-4">
+                <span className={giftingStatus.tickets_remaining > 0 ? 'text-[#06d6a0]' : 'text-[#ef4444]'}>
+                  {giftingStatus.tickets_remaining}/7 tickets remaining
+                </span>
+                <span className="text-[#25365a]">•</span>
+                <span className={giftingStatus.hours_remaining > 0 ? 'text-[#06d6a0]' : 'text-[#ef4444]'}>
+                  {giftingStatus.hours_remaining}h left to gift
+                </span>
+              </div>
+              {!giftingStatus.can_gift && (
+                <p className="text-[#ef4444] mt-2">
+                  {giftingStatus.reason === "Expired" 
+                    ? "Gift period expired (12h limit)" 
+                    : "Gift limit reached (7 max)"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* My Gifted Tickets */}
+          {myTickets.length > 0 && (
+            <Card className="bg-[#10172a] border-[#25365a] p-6">
+              <h3 className="text-xl font-semibold text-[#e6f1ff] mb-4 flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-[#06d6a0]" />
+                My Gifted Tickets
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {myTickets.map((ticket) => (
+                  <button
+                    key={ticket.id}
+                    onClick={() => handleShowTicket(ticket)}
+                    className="p-4 bg-[#0f1b33] border border-[#25365a] rounded-lg hover:border-[#06d6a0]/50 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <QrCode className="h-10 w-10 text-[#06d6a0]" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-[#e6f1ff] truncate">{ticket.label}</p>
+                        <p className="text-xs text-[#9fb4d0]">
+                          {ticket.activations_count} aktivací
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Ticket QR Modal */}
+      <Dialog open={showTicketModal} onOpenChange={setShowTicketModal}>
+        <DialogContent className="bg-[#10172a] border-[#25365a] text-[#e6f1ff] max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <QrCode className="h-6 w-6 text-[#06d6a0]" />
+              🎁 Gift Ticket
+            </DialogTitle>
+          </DialogHeader>
+          
+          {createdTicket && (
+            <div className="space-y-6">
+              {/* QR Code */}
+              <div className="bg-white p-6 rounded-lg flex items-center justify-center">
+                <QRCodeSVG
+                  value={createdTicket.activation_link}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+
+              {/* Ticket Info */}
+              <div className="space-y-3 text-sm">
+                <div>
+                  <span className="text-[#9fb4d0]">Event:</span>{' '}
+                  <span className="text-[#e6f1ff] font-semibold">{createdTicket.event_name}</span>
+                </div>
+                <div>
+                  <span className="text-[#9fb4d0]">Label:</span>{' '}
+                  <span className="text-[#e6f1ff]">{createdTicket.label}</span>
+                </div>
+                <div className="pt-2">
+                  <div className="text-[#9fb4d0] mb-1">Activation URL:</div>
+                  <code className="block bg-[#0f1b33] p-2 rounded text-xs text-[#06d6a0] break-all">
+                    {createdTicket.activation_link}
+                  </code>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdTicket.activation_link);
+                    toast.success('URL zkopírována!');
+                  }}
+                  className="flex-1 bg-[#06d6a0] hover:bg-[#07f0b8] text-[#0a0f1d] font-semibold"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy URL
+                </Button>
+                <Button
+                  onClick={() => setShowTicketModal(false)}
+                  variant="outline"
+                  className="flex-1 border-[#25365a] text-[#e6f1ff] hover:bg-[#25365a]"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

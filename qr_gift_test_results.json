@@ -1,0 +1,195 @@
+[
+  {
+    "test": "1.1 - Demo Account Activation",
+    "success": true,
+    "message": "Demo account activated successfully with token OMEGA-2025-B20176",
+    "timestamp": "2025-10-22T18:16:26.312118",
+    "details": {
+      "user_name": "Demo User ca3b43a8",
+      "is_demo": true,
+      "demo_expires_at": "2025-10-25T18:16:26.308133+00:00"
+    }
+  },
+  {
+    "test": "1.2 - Gifting Status Check",
+    "success": true,
+    "message": "Gifting status: can_gift=True, tickets_used=0, tickets_remaining=7, hours_remaining=12.0",
+    "timestamp": "2025-10-22T18:16:26.387286",
+    "details": {
+      "checks": {
+        "can_gift": true,
+        "tickets_used": true,
+        "tickets_remaining": true,
+        "hours_remaining": true
+      },
+      "full_response": {
+        "can_gift": true,
+        "tickets_used": 0,
+        "tickets_remaining": 7,
+        "hours_remaining": 12.0,
+        "hours_elapsed": 0.0,
+        "reason": "Active"
+      }
+    }
+  },
+  {
+    "test": "2.1 - Get Parent Token Event Name",
+    "success": true,
+    "message": "Parent token event name: Engaged Investments Conference Day 2",
+    "timestamp": "2025-10-22T18:16:26.429663",
+    "details": {
+      "parent_label": "Engaged Investments Conference Day 2 - Ticket #1"
+    }
+  },
+  {
+    "test": "2.2 - Create Gift Ticket",
+    "success": true,
+    "message": "Gift ticket created: token=DEMO-2025-F78D6D, label=Engaged Investments Conference Day 2 - Demo Gift #1, event=Engaged Investments Conference Day 2, tickets_remaining=6, hours_remaining=12.0",
+    "timestamp": "2025-10-22T18:16:26.465444",
+    "details": {
+      "checks": {
+        "token_format": true,
+        "event_name_matches_parent": true,
+        "label_contains_event": true,
+        "tickets_remaining": true,
+        "hours_remaining": true
+      },
+      "parent_event_name": "Engaged Investments Conference Day 2",
+      "full_response": {
+        "id": "3fa9a233-a3cb-407b-b959-76668318923f",
+        "token": "DEMO-2025-F78D6D",
+        "label": "Engaged Investments Conference Day 2 - Demo Gift #1",
+        "activation_link": "https://agent-forge-49.preview.emergentagent.com/demo/activate/DEMO-2025-F78D6D",
+        "event_name": "Engaged Investments Conference Day 2",
+        "status": "active",
+        "created_at": "2025-10-22T18:16:26.461082+00:00",
+        "tickets_remaining": 6,
+        "hours_remaining": 12.0
+      }
+    }
+  },
+  {
+    "test": "3.2 - Create Ticket #2",
+    "success": true,
+    "message": "Ticket #2 created. tickets_remaining=5 (expected: 5)",
+    "timestamp": "2025-10-22T18:16:26.504670",
+    "details": {
+      "token": "DEMO-2025-8B4EB5",
+      "label": "Engaged Investments Conference Day 2 - Demo Gift #2"
+    }
+  },
+  {
+    "test": "3.3 - Create Ticket #3",
+    "success": true,
+    "message": "Ticket #3 created. tickets_remaining=4 (expected: 4)",
+    "timestamp": "2025-10-22T18:16:26.540841",
+    "details": {
+      "token": "DEMO-2025-C31624",
+      "label": "Engaged Investments Conference Day 2 - Demo Gift #3"
+    }
+  },
+  {
+    "test": "3.4 - Create Ticket #4",
+    "success": true,
+    "message": "Ticket #4 created. tickets_remaining=3 (expected: 3)",
+    "timestamp": "2025-10-22T18:16:26.582322",
+    "details": {
+      "token": "DEMO-2025-1FA761",
+      "label": "Engaged Investments Conference Day 2 - Demo Gift #4"
+    }
+  },
+  {
+    "test": "3.5 - Create Ticket #5",
+    "success": true,
+    "message": "Ticket #5 created. tickets_remaining=2 (expected: 2)",
+    "timestamp": "2025-10-22T18:16:26.619352",
+    "details": {
+      "token": "DEMO-2025-42DEF0",
+      "label": "Engaged Investments Conference Day 2 - Demo Gift #5"
+    }
+  },
+  {
+    "test": "3.6 - Create Ticket #6",
+    "success": true,
+    "message": "Ticket #6 created. tickets_remaining=1 (expected: 1)",
+    "timestamp": "2025-10-22T18:16:26.698450",
+    "details": {
+      "token": "DEMO-2025-5767AE",
+      "label": "Engaged Investments Conference Day 2 - Demo Gift #6"
+    }
+  },
+  {
+    "test": "3.7 - Create Ticket #7",
+    "success": true,
+    "message": "Ticket #7 created. tickets_remaining=0 (expected: 0)",
+    "timestamp": "2025-10-22T18:16:26.735625",
+    "details": {
+      "token": "DEMO-2025-79DB66",
+      "label": "Engaged Investments Conference Day 2 - Demo Gift #7"
+    }
+  },
+  {
+    "test": "3.8 - Create Ticket #8 (Should Fail)",
+    "success": true,
+    "message": "Correctly rejected 8th ticket with 403. Message: Gift ticket limit reached. You can only create 7 tickets per demo account. (7/7 used)",
+    "timestamp": "2025-10-22T18:16:26.771560",
+    "details": {
+      "status_code": 403,
+      "detail": "Gift ticket limit reached. You can only create 7 tickets per demo account. (7/7 used)"
+    }
+  },
+  {
+    "test": "4.1 - Get Parent Event Name",
+    "success": true,
+    "message": "Parent event name: Engaged Investments Conference Day 2",
+    "timestamp": "2025-10-22T18:16:26.809165"
+  },
+  {
+    "test": "4.2 - Get Current Admin Event Name",
+    "success": true,
+    "message": "Current admin event name: Test Event 2025",
+    "timestamp": "2025-10-22T18:16:26.846173"
+  },
+  {
+    "test": "4.3 - Verify Event Name Inheritance",
+    "success": true,
+    "message": "All 7 demo tickets inherit parent event name 'Engaged Investments Conference Day 2' (not admin event 'Test Event 2025')",
+    "timestamp": "2025-10-22T18:16:26.879900",
+    "details": {
+      "all_match_parent": true,
+      "none_match_admin": true,
+      "parent_event": "Engaged Investments Conference Day 2",
+      "admin_event": "Test Event 2025",
+      "ticket_count": 7
+    }
+  },
+  {
+    "test": "5.1 - Get Current Admin Event Name",
+    "success": true,
+    "message": "Current admin event name: Test Event 2025",
+    "timestamp": "2025-10-22T18:16:26.959652"
+  },
+  {
+    "test": "5.2 - Create Admin Quick Ticket",
+    "success": true,
+    "message": "Admin quick ticket created: token=OMEGA-2025-8148A1, label=Test Event 2025 - Ticket #6, event=Test Event 2025",
+    "timestamp": "2025-10-22T18:16:26.996228",
+    "details": {
+      "checks": {
+        "token_format": true,
+        "event_name_matches_admin": true,
+        "label_contains_admin_event": true
+      },
+      "admin_event_name": "Test Event 2025",
+      "full_response": {
+        "id": "149fbb74-a8c7-45c8-8723-b84668694420",
+        "token": "OMEGA-2025-8148A1",
+        "label": "Test Event 2025 - Ticket #6",
+        "activation_link": "https://agent-forge-49.preview.emergentagent.com/demo/activate/OMEGA-2025-8148A1",
+        "event_name": "Test Event 2025",
+        "status": "active",
+        "created_at": "2025-10-22T18:16:26.991763+00:00"
+      }
+    }
+  }
+]

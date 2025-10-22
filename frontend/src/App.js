@@ -14,6 +14,7 @@ import TokenPurchase from '@/pages/TokenPurchase';
 import Privacy from '@/pages/Privacy';
 import GDPRSettings from '@/pages/GDPRSettings';
 import ErrorPage from '@/pages/ErrorPage';
+import SharedAgent from '@/pages/SharedAgent';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import Overview from '@/pages/admin/Overview';
@@ -54,6 +55,7 @@ function App() {
             <Route path="/demo/activate/:token" element={<DemoActivate />} />
             <Route path="/login" element={<Login />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/shared/:shareToken" element={<SharedAgent />} />
             <Route path="/demo" element={<AgentCreator />} />
             <Route path="/my-agents" element={<MyAgents />} />
             <Route 

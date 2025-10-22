@@ -5,31 +5,31 @@
     "status_code": 200,
     "success": true,
     "message": "Admin login successful. Token received. User: Admin",
-    "timestamp": "2025-10-22T15:51:39.315091"
+    "timestamp": "2025-10-22T18:01:12.450030"
   },
   {
     "endpoint": "/admin/master-prompts",
     "method": "GET",
     "status_code": 200,
     "success": true,
-    "message": "Retrieved 2 master prompts. \u03a9_v1.0 exists: True",
-    "timestamp": "2025-10-22T15:51:39.358591"
+    "message": "Retrieved 3 master prompts. \u03a9_v1.0 exists: True",
+    "timestamp": "2025-10-22T18:01:12.497555"
   },
   {
     "endpoint": "/admin/learning-summaries",
     "method": "GET",
     "status_code": 200,
     "success": true,
-    "message": "Retrieved 1 learning summaries",
-    "timestamp": "2025-10-22T15:51:39.397546"
+    "message": "Retrieved 2 learning summaries",
+    "timestamp": "2025-10-22T18:01:12.539890"
   },
   {
     "endpoint": "/admin/agents/analytics",
     "method": "GET",
     "status_code": 200,
     "success": true,
-    "message": "Retrieved 16 agents. Total: 16, v9: 0",
-    "timestamp": "2025-10-22T15:51:39.438950"
+    "message": "Retrieved 17 agents. Total: 17, v9: 0",
+    "timestamp": "2025-10-22T18:01:12.584791"
   },
   {
     "endpoint": "/admin/agents/analytics?status_filter=v9_only",
@@ -37,7 +37,7 @@
     "status_code": 200,
     "success": true,
     "message": "Retrieved 0 v9 agents",
-    "timestamp": "2025-10-22T15:51:39.474822"
+    "timestamp": "2025-10-22T18:01:12.626442"
   },
   {
     "endpoint": "/admin/feedback/analytics",
@@ -45,15 +45,15 @@
     "status_code": 200,
     "success": true,
     "message": "Retrieved feedback analytics. Total: 0, Avg: 0",
-    "timestamp": "2025-10-22T15:51:39.510946"
+    "timestamp": "2025-10-22T18:01:12.706043"
   },
   {
     "endpoint": "/admin/metrics",
     "method": "GET",
     "status_code": 200,
     "success": true,
-    "message": "Live metrics: Active users: 4, Agents today: 16, Tokens: 26116",
-    "timestamp": "2025-10-22T15:51:39.547365"
+    "message": "Live metrics: Active users: 7, Agents today: 17, Tokens: 26116",
+    "timestamp": "2025-10-22T18:01:12.745473"
   },
   {
     "endpoint": "/admin/trigger-learning",
@@ -61,7 +61,7 @@
     "status_code": 200,
     "success": true,
     "message": "Learning loop triggered: Learning loop triggered successfully",
-    "timestamp": "2025-10-22T15:51:39.583187"
+    "timestamp": "2025-10-22T18:01:12.782470"
   },
   {
     "endpoint": "/admin/qr-tokens",
@@ -69,15 +69,15 @@
     "status_code": 0,
     "success": false,
     "message": "Exception: HTTPSConnectionPool(host='agent-forge-49.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)",
-    "timestamp": "2025-10-22T15:52:09.642029"
+    "timestamp": "2025-10-22T18:01:42.822416"
   },
   {
     "endpoint": "/admin/master-prompts/reject",
     "method": "POST",
     "status_code": 200,
     "success": true,
-    "message": "Rejected master prompt: \u03a9_v1.1",
-    "timestamp": "2025-10-22T15:52:17.911092"
+    "message": "Rejected master prompt: \u03a9_v1.2",
+    "timestamp": "2025-10-22T18:02:05.170829"
   },
   {
     "endpoint": "/admin/metrics (no auth)",
@@ -85,6 +85,62 @@
     "status_code": 401,
     "success": true,
     "message": "Correctly rejected unauthorized request",
-    "timestamp": "2025-10-22T15:52:17.954308"
+    "timestamp": "2025-10-22T18:02:05.206461"
+  },
+  {
+    "endpoint": "/current-event",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved current event: Engaged Investments Conference Day 2",
+    "timestamp": "2025-10-22T18:02:05.242675"
+  },
+  {
+    "endpoint": "/admin/set-event",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Set event name to: Test Event 2025",
+    "timestamp": "2025-10-22T18:02:05.278870"
+  },
+  {
+    "endpoint": "/admin/quick-ticket",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Created quick ticket: Test Event 2025 - Ticket #1, Token: OMEGA-2025-6F8A9E, Event: Test Event 2025",
+    "timestamp": "2025-10-22T18:02:05.313893"
+  },
+  {
+    "endpoint": "/demo/activate",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Demo account activated. User: Demo User d9828ddd, is_demo: True",
+    "timestamp": "2025-10-22T18:02:05.393796"
+  },
+  {
+    "endpoint": "/demo/create-ticket",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Demo user created ticket: Test Event 2025 - Demo #1, Token: DEMO-2025-72127C, Event: Test Event 2025",
+    "timestamp": "2025-10-22T18:02:05.429909"
+  },
+  {
+    "endpoint": "/demo/my-tickets",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved 1 tickets for demo user",
+    "timestamp": "2025-10-22T18:02:05.467269"
+  },
+  {
+    "endpoint": "/demo/activate (new token)",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Successfully activated with new token: OMEGA-2025-490C1F, User: Demo User ce8c31cf",
+    "timestamp": "2025-10-22T18:02:05.556607"
   }
 ]

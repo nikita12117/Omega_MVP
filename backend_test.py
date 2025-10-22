@@ -430,6 +430,249 @@ def test_unauthorized_access():
         log_test("/admin/metrics (no auth)", "GET", 0, False, f"Exception: {str(e)}")
         return False
 
+def test_get_current_event():
+    """Test 11: Get Current Event Name"""
+    endpoint = f"{BACKEND_URL}/current-event"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    
+    try:
+        response = requests.get(endpoint, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "event_name" in data:
+                event_name = data.get("event_name")
+                log_test("/current-event", "GET", 200, True, 
+                        f"Retrieved current event: {event_name}")
+                return True, event_name
+            else:
+                log_test("/current-event", "GET", 200, False, 
+                        "Response missing event_name field", data)
+                return False, None
+        else:
+            log_test("/current-event", "GET", response.status_code, False, 
+                    "Failed to get current event", response.json() if response.text else None)
+            return False, None
+            
+    except Exception as e:
+        log_test("/current-event", "GET", 0, False, f"Exception: {str(e)}")
+        return False, None
+
+def test_set_event():
+    """Test 12: Set Current Event Name"""
+    endpoint = f"{BACKEND_URL}/admin/set-event"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    payload = {"event_name": "Test Event 2025"}
+    
+    try:
+        response = requests.post(endpoint, json=payload, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and data.get("event_name") == "Test Event 2025":
+                log_test("/admin/set-event", "POST", 200, True, 
+                        f"Set event name to: {data.get('event_name')}")
+                return True
+            else:
+                log_test("/admin/set-event", "POST", 200, False, 
+                        "Response missing success or event_name field", data)
+                return False
+        else:
+            log_test("/admin/set-event", "POST", response.status_code, False, 
+                    "Failed to set event name", response.json() if response.text else None)
+            return False
+            
+    except Exception as e:
+        log_test("/admin/set-event", "POST", 0, False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_quick_ticket():
+    """Test 13: Admin Quick Ticket Creation"""
+    endpoint = f"{BACKEND_URL}/admin/quick-ticket"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    
+    try:
+        response = requests.post(endpoint, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            required_fields = ["id", "token", "label", "activation_link", "event_name", "status"]
+            missing_fields = [f for f in required_fields if f not in data]
+            
+            if not missing_fields:
+                token = data.get("token")
+                label = data.get("label")
+                event_name = data.get("event_name")
+                
+                # Verify token format: OMEGA-2025-XXXXXX
+                if token and token.startswith("OMEGA-2025-"):
+                    log_test("/admin/quick-ticket", "POST", 200, True, 
+                            f"Created quick ticket: {label}, Token: {token}, Event: {event_name}")
+                    return True, data
+                else:
+                    log_test("/admin/quick-ticket", "POST", 200, False, 
+                            f"Token format incorrect. Expected OMEGA-2025-XXXXXX, got: {token}", data)
+                    return False, None
+            else:
+                log_test("/admin/quick-ticket", "POST", 200, False, 
+                        f"Response missing fields: {missing_fields}", data)
+                return False, None
+        else:
+            log_test("/admin/quick-ticket", "POST", response.status_code, False, 
+                    "Failed to create quick ticket", response.json() if response.text else None)
+            return False, None
+            
+    except Exception as e:
+        log_test("/admin/quick-ticket", "POST", 0, False, f"Exception: {str(e)}")
+        return False, None
+
+# Global variable to store demo user token
+demo_user_token = None
+
+def test_demo_activate():
+    """Test 14: Activate Demo Account with Token"""
+    global demo_user_token
+    
+    endpoint = f"{BACKEND_URL}/demo/activate"
+    payload = {"token": "OMEGA-2025-B20176"}
+    
+    try:
+        response = requests.post(endpoint, json=payload, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "token" in data and "user" in data:
+                demo_user_token = data["token"]
+                user = data.get("user", {})
+                log_test("/demo/activate", "POST", 200, True, 
+                        f"Demo account activated. User: {user.get('name')}, is_demo: {user.get('is_demo')}")
+                return True
+            else:
+                log_test("/demo/activate", "POST", 200, False, 
+                        "Response missing token or user field", data)
+                return False
+        else:
+            log_test("/demo/activate", "POST", response.status_code, False, 
+                    "Failed to activate demo account", response.json() if response.text else None)
+            return False
+            
+    except Exception as e:
+        log_test("/demo/activate", "POST", 0, False, f"Exception: {str(e)}")
+        return False
+
+def test_demo_create_ticket():
+    """Test 15: Demo User Create Ticket"""
+    endpoint = f"{BACKEND_URL}/demo/create-ticket"
+    headers = {"Authorization": f"Bearer {demo_user_token}"}
+    
+    try:
+        response = requests.post(endpoint, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            required_fields = ["id", "token", "label", "activation_link", "event_name"]
+            missing_fields = [f for f in required_fields if f not in data]
+            
+            if not missing_fields:
+                token = data.get("token")
+                label = data.get("label")
+                event_name = data.get("event_name")
+                
+                # Verify token format: DEMO-2025-XXXXXX
+                if token and token.startswith("DEMO-2025-"):
+                    log_test("/demo/create-ticket", "POST", 200, True, 
+                            f"Demo user created ticket: {label}, Token: {token}, Event: {event_name}")
+                    return True, data
+                else:
+                    log_test("/demo/create-ticket", "POST", 200, False, 
+                            f"Token format incorrect. Expected DEMO-2025-XXXXXX, got: {token}", data)
+                    return False, None
+            else:
+                log_test("/demo/create-ticket", "POST", 200, False, 
+                        f"Response missing fields: {missing_fields}", data)
+                return False, None
+        else:
+            log_test("/demo/create-ticket", "POST", response.status_code, False, 
+                    "Failed to create demo ticket", response.json() if response.text else None)
+            return False, None
+            
+    except Exception as e:
+        log_test("/demo/create-ticket", "POST", 0, False, f"Exception: {str(e)}")
+        return False, None
+
+def test_demo_my_tickets():
+    """Test 16: Demo User Get My Tickets"""
+    endpoint = f"{BACKEND_URL}/demo/my-tickets"
+    headers = {"Authorization": f"Bearer {demo_user_token}"}
+    
+    try:
+        response = requests.get(endpoint, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "tickets" in data:
+                tickets = data.get("tickets", [])
+                count = len(tickets)
+                log_test("/demo/my-tickets", "GET", 200, True, 
+                        f"Retrieved {count} tickets for demo user")
+                return True
+            else:
+                log_test("/demo/my-tickets", "GET", 200, False, 
+                        "Response missing tickets field", data)
+                return False
+        else:
+            log_test("/demo/my-tickets", "GET", response.status_code, False, 
+                    "Failed to get demo user tickets", response.json() if response.text else None)
+            return False
+            
+    except Exception as e:
+        log_test("/demo/my-tickets", "GET", 0, False, f"Exception: {str(e)}")
+        return False
+
+def test_activation_link():
+    """Test 17: Test Activation Link with New Token"""
+    # First create a new ticket to get a fresh token
+    endpoint = f"{BACKEND_URL}/admin/quick-ticket"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    
+    try:
+        response = requests.post(endpoint, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            new_token = data.get("token")
+            
+            if new_token:
+                # Now test activation with this new token
+                activate_endpoint = f"{BACKEND_URL}/demo/activate"
+                activate_payload = {"token": new_token}
+                
+                response2 = requests.post(activate_endpoint, json=activate_payload, timeout=30)
+                
+                if response2.status_code == 200:
+                    activate_data = response2.json()
+                    if "token" in activate_data and "user" in activate_data:
+                        user = activate_data.get("user", {})
+                        log_test("/demo/activate (new token)", "POST", 200, True, 
+                                f"Successfully activated with new token: {new_token}, User: {user.get('name')}")
+                        return True
+                    else:
+                        log_test("/demo/activate (new token)", "POST", 200, False, 
+                                "Response missing token or user field", activate_data)
+                        return False
+                else:
+                    log_test("/demo/activate (new token)", "POST", response2.status_code, False, 
+                            "Failed to activate with new token", response2.json() if response2.text else None)
+                    return False
+            else:
+                log_test("/demo/activate (new token)", "POST", 0, False, 
+                        "Failed to get new token for activation test")
+                return False
+                
+    except Exception as e:
+        log_test("/demo/activate (new token)", "POST", 0, False, f"Exception: {str(e)}")
+        return False
+
 def print_summary():
     """Print test summary"""
     print("\n" + "="*80)
@@ -526,6 +769,48 @@ def main():
     print("\nTest 10: Authentication Enforcement")
     print("-" * 80)
     test_unauthorized_access()
+    print("-" * 80)
+    
+    # Test 11: Get Current Event
+    print("\nTest 11: Get Current Event Name")
+    print("-" * 80)
+    test_get_current_event()
+    print("-" * 80)
+    
+    # Test 12: Set Event Name
+    print("\nTest 12: Set Current Event Name")
+    print("-" * 80)
+    test_set_event()
+    print("-" * 80)
+    
+    # Test 13: Admin Quick Ticket
+    print("\nTest 13: Admin Quick Ticket Creation")
+    print("-" * 80)
+    test_admin_quick_ticket()
+    print("-" * 80)
+    
+    # Test 14: Demo Activation
+    print("\nTest 14: Demo Account Activation")
+    print("-" * 80)
+    if test_demo_activate():
+        # Test 15: Demo Create Ticket (only if activation succeeded)
+        print("\nTest 15: Demo User Create Ticket")
+        print("-" * 80)
+        test_demo_create_ticket()
+        print("-" * 80)
+        
+        # Test 16: Demo My Tickets
+        print("\nTest 16: Demo User Get My Tickets")
+        print("-" * 80)
+        test_demo_my_tickets()
+        print("-" * 80)
+    else:
+        print("\n⚠️  Skipping demo user tests (activation failed)\n")
+    
+    # Test 17: Activation Link
+    print("\nTest 17: Test Activation Link with New Token")
+    print("-" * 80)
+    test_activation_link()
     print("-" * 80)
     
     # Print summary

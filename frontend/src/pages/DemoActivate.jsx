@@ -34,7 +34,7 @@ export const DemoActivate = () => {
         payload.ref = ref;
       }
 
-      const { data } = await axios.post('/api/demo/activate', payload);
+      const { data } = await axios.post('/demo/activate', payload);
       
       // Store JWT token
       if (data.token) {

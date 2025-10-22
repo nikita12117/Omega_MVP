@@ -160,6 +160,27 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ BOTH ENDPOINTS WORKING PERFECTLY. (1) POST /api/admin/master-prompts/approve - Successfully approved Ω_v1.1, archived old Ω_v1.0, set approved_at and approved_by fields. (2) POST /api/admin/master-prompts/reject - Successfully rejected pending prompt Ω_v1.1, marked status as 'rejected'. Both endpoints properly enforce admin authentication (403 for non-admin users)."
+        
+  - task: "QR Ticket Management APIs (Event-based)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "User requested testing of new QR ticket endpoints: GET /api/current-event, POST /api/admin/set-event, POST /api/admin/quick-ticket, POST /api/demo/create-ticket, GET /api/demo/my-tickets, and activation link testing."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL QR TICKET ENDPOINTS WORKING PERFECTLY (17/18 tests passed, 94.4% success rate). Tested 7 new endpoints: (1) GET /api/current-event - Successfully returns event name (authenticated users). (2) POST /api/admin/set-event - Admin can set event name to 'Test Event 2025'. (3) POST /api/admin/quick-ticket - Creates ticket with correct format OMEGA-2025-XXXXXX, returns id, token, label, activation_link, event_name, status. Label format: 'Test Event 2025 - Ticket #1'. (4) POST /api/demo/activate - Successfully activates demo account with token OMEGA-2025-B20176, creates demo user with 72h expiry. (5) POST /api/demo/create-ticket - Demo user creates ticket with format DEMO-2025-XXXXXX, returns all required fields. (6) GET /api/demo/my-tickets - Returns list of tickets created by demo user. (7) Activation link test - Successfully creates new token and activates new demo user. All token formats verified, authentication working correctly. One transient timeout on GET /admin/qr-tokens (retested successfully with 9 tokens retrieved)."
+      - working: true
+        agent: "user"
+        comment: "User requested testing of updated QR gift ticket system with new restrictions: (1) Check gifting status endpoint, (2) Create gift ticket with parent event inheritance, (3) Verify 7 ticket limit enforcement, (4) Verify event name inheritance from parent token (not admin event), (5) Verify admin quick ticket uses current admin event name."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL QR GIFT TICKET RESTRICTIONS WORKING PERFECTLY (16/16 tests passed, 100% success rate). Comprehensive testing completed: SCENARIO 1 - Gifting Status: GET /api/demo/gifting-status correctly returns can_gift=true, tickets_used=0, tickets_remaining=7, hours_remaining=12.0 for fresh demo account. SCENARIO 2 - Gift Ticket Creation: POST /api/demo/create-ticket successfully creates tickets with DEMO-2025-XXXXXX format, correctly inherits parent event name 'Engaged Investments Conference Day 2' (not admin event 'Test Event 2025'), returns tickets_remaining=6 and hours_remaining=12.0. SCENARIO 3 - 7 Ticket Limit: Successfully created 7 tickets with decreasing tickets_remaining (6,5,4,3,2,1,0), 8th ticket correctly rejected with 403 and message 'Gift ticket limit reached. You can only create 7 tickets per demo account. (7/7 used)'. SCENARIO 4 - Event Inheritance: All 7 demo-created tickets correctly inherit parent event name 'Engaged Investments Conference Day 2', NOT the current admin event 'Test Event 2025'. SCENARIO 5 - Admin Quick Ticket: POST /api/admin/quick-ticket correctly uses current admin event name 'Test Event 2025' with OMEGA-2025-XXXXXX format. All restrictions (7 ticket limit, 12-hour time window, event name inheritance) working as designed."
 
 frontend:
   - task: "Agent Monitor Dashboard Module"
@@ -260,8 +281,8 @@ frontend:
 
 metadata:
   created_by: "main_agent"
-  version: "1.1"
-  test_sequence: 0
+  version: "1.2"
+  test_sequence: 1
   run_ui: false
 
 test_plan:
@@ -278,3 +299,11 @@ agent_communication:
     message: "Completed implementation of all 6 admin dashboard modules + QR Management. Created 3 new backend APIs. Frontend routes added. Ready for backend testing."
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE - ALL ADMIN APIs WORKING. Tested 12 admin endpoints with 90.9% success rate (10/11 passed, 1 transient timeout). All critical functionality verified: (1) Admin authentication with JWT tokens, (2) Master Prompt management (get/approve/reject), (3) Learning summaries retrieval, (4) Agent analytics with filters, (5) Feedback analytics with trends, (6) Live metrics dashboard, (7) Learning loop trigger, (8) QR token CRUD operations. Learning loop successfully generated Ω_v1.1 prompt. Authentication enforcement working (401/403 for unauthorized). Ready for frontend integration testing."
+  - agent: "user"
+    message: "Test the new QR ticket endpoints: GET /api/current-event, POST /api/admin/set-event, POST /api/admin/quick-ticket, POST /api/demo/create-ticket, GET /api/demo/my-tickets, and activation link with token OMEGA-2025-B20176."
+  - agent: "testing"
+    message: "✅ QR TICKET ENDPOINTS TESTING COMPLETE - ALL WORKING (94.4% success rate, 17/18 tests passed). All 7 new QR ticket endpoints tested and verified: (1) GET /api/current-event returns event name for authenticated users, (2) POST /api/admin/set-event successfully sets event to 'Test Event 2025', (3) POST /api/admin/quick-ticket creates tickets with OMEGA-2025-XXXXXX format and proper label, (4) POST /api/demo/activate creates demo users with 72h expiry, (5) POST /api/demo/create-ticket creates DEMO-2025-XXXXXX format tickets, (6) GET /api/demo/my-tickets returns user's tickets, (7) Activation link flow working end-to-end. Token formats verified, all required fields present in responses. Admin credentials working (admin@omegacodex.local / cUtsuv-8nirbe-tippop). One transient timeout retested successfully."
+  - agent: "user"
+    message: "Test the updated QR gift ticket system with new restrictions: (1) Check gifting status with fresh demo account, (2) Create gift ticket inheriting parent event name, (3) Verify 7 ticket limit enforcement, (4) Verify event name inheritance from parent token (not admin event), (5) Verify admin quick ticket uses current admin event name."
+  - agent: "testing"
+    message: "✅ QR GIFT TICKET RESTRICTIONS TESTING COMPLETE - ALL WORKING PERFECTLY (100% success rate, 16/16 tests passed). Comprehensive testing of all 5 scenarios completed successfully: (1) Gifting Status API correctly returns can_gift=true, tickets_used=0, tickets_remaining=7, hours_remaining=12.0 for fresh demo account activated with OMEGA-2025-B20176. (2) Gift ticket creation successfully inherits parent event name 'Engaged Investments Conference Day 2' (NOT admin event 'Test Event 2025'), creates DEMO-2025-XXXXXX format tokens, returns correct tickets_remaining and hours_remaining. (3) 7 ticket limit strictly enforced - successfully created 7 tickets with decreasing counters (6,5,4,3,2,1,0), 8th ticket correctly rejected with 403 status and clear error message. (4) Event name inheritance verified - all 7 demo-created tickets inherit parent event 'Engaged Investments Conference Day 2', none use admin event 'Test Event 2025'. (5) Admin quick ticket correctly uses current admin event 'Test Event 2025' with OMEGA-2025-XXXXXX format. All restrictions (7 ticket limit, 12-hour time window, event name inheritance) working as designed. No issues found."

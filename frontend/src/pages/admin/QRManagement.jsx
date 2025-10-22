@@ -5,14 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import apiClient from '@/lib/axios';
-import { QrCode, Plus, CheckCircle, XCircle, Copy } from 'lucide-react';
+import { QrCode, Plus, CheckCircle, XCircle, Copy, Download, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const QRManagement = () => {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedToken, setSelectedToken] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [eventName, setEventName] = useState('Default Event');
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
   const [formData, setFormData] = useState({
     label: '',
     max_activations: '',
@@ -20,8 +26,44 @@ const QRManagement = () => {
   });
 
   useEffect(() => {
+    fetchCurrentEvent();
     fetchTokens();
   }, []);
+
+  const fetchCurrentEvent = async () => {
+    try {
+      const response = await apiClient.get('/current-event');
+      setEventName(response.data.event_name);
+    } catch (error) {
+      console.error('Error fetching event:', error);
+    }
+  };
+
+  const handleUpdateEvent = async () => {
+    try {
+      await apiClient.post('/admin/set-event', { event_name: eventName });
+      toast.success('Název eventu aktualizován!');
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast.error('Chyba při aktualizaci eventu');
+    }
+  };
+
+  const handleQuickCreate = async () => {
+    setIsCreatingTicket(true);
+    try {
+      const response = await apiClient.post('/admin/quick-ticket');
+      toast.success(`Ticket vytvořen: ${response.data.label}`);
+      setSelectedToken(response.data);
+      setShowQRModal(true);
+      fetchTokens();
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast.error('Chyba při vytváření ticketu');
+    } finally {
+      setIsCreatingTicket(false);
+    }
+  };
 
   const fetchTokens = async () => {
     setLoading(true);
@@ -73,6 +115,36 @@ const QRManagement = () => {
     toast.success('URL zkopírována!');
   };
 
+  const handleShowQR = (token) => {
+    setSelectedToken(token);
+    setShowQRModal(true);
+  };
+
+  const downloadQR = () => {
+    if (!selectedToken) return;
+    
+    const svg = document.getElementById('qr-code-svg');
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `qr-${selectedToken.label.replace(/\s+/g, '-')}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+      toast.success('QR kód stažen!');
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       active: 'bg-[#06d6a0] text-[#0a0f1d]',
@@ -96,24 +168,72 @@ const QRManagement = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 sm:p-8 lg:p-12">
-      <div className="max-w-[1400px] mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12 px-2">
-          <div>
-            <h2 className="text-4xl font-bold text-[#e6f1ff] mb-3">QR Token Management</h2>
-            <p className="text-lg text-[#9fb4d0]">
-              Správa demo aktivačních tokenů pro QR kódy
-            </p>
-          </div>
-          <Button 
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-[#06d6a0] hover:bg-[#07f0b8] text-[#0a0f1d] font-semibold h-12 px-6"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nový Token
-          </Button>
-        </div>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
+        {/* Header with Event Name */}
+        <Card className="bg-[#10172a] border-[#25365a]">
+          <CardHeader>
+            <CardTitle className="text-2xl text-[#e6f1ff] flex items-center gap-2">
+              <QrCode className="h-6 w-6 text-[#06d6a0]" />
+              QR Ticket Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Event Name Input */}
+            <div>
+              <Label htmlFor="event-name" className="text-base text-[#e6f1ff] mb-2 block">
+                Current Event Name
+              </Label>
+              <div className="flex gap-3">
+                <Input
+                  id="event-name"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  placeholder="e.g., Web Summit 2025"
+                  className="flex-1 bg-[#0f1b33] border-[#25365a] text-[#e6f1ff] placeholder:text-[#7a8fb8]"
+                />
+                <Button
+                  onClick={handleUpdateEvent}
+                  variant="outline"
+                  className="border-[#25365a] text-[#e6f1ff] hover:bg-[#25365a]"
+                >
+                  Update
+                </Button>
+              </div>
+              <p className="text-sm text-[#9fb4d0] mt-2">
+                All tickets will use this event name. Change it when switching events.
+              </p>
+            </div>
+
+            {/* Quick Create Button */}
+            <Button
+              onClick={handleQuickCreate}
+              disabled={isCreatingTicket}
+              className="w-full bg-[#06d6a0] hover:bg-[#07f0b8] text-[#0a0f1d] font-semibold h-14 text-lg"
+            >
+              {isCreatingTicket ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0a0f1d] mr-2"></div>
+                  Creating Ticket...
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-6 w-6" />
+                  Create New Ticket (One Click)
+                </>
+              )}
+            </Button>
+
+            {/* Advanced Create (Optional) */}
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="w-full border-[#25365a] text-[#9fb4d0] hover:text-[#e6f1ff] hover:border-[#06d6a0]/50"
+            >
+              {showCreateForm ? 'Hide' : 'Show'} Advanced Options
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Create Form */}
         {showCreateForm && (
@@ -228,34 +348,44 @@ const QRManagement = () => {
                 Žádné QR tokeny. Vytvořte první!
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {tokens.map(token => (
                   <div 
                     key={token.id}
-                    className="border border-[#25365a] rounded-lg p-6 hover:bg-[#0f1b33] transition-all"
+                    className="border border-[#25365a] rounded-lg p-4 md:p-6 hover:bg-[#0f1b33] transition-all"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <QrCode className="w-6 h-6 text-[#9fb4d0]" />
-                          <h3 className="font-semibold text-xl text-[#e6f1ff]">{token.label}</h3>
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
+                      {/* Large Clickable QR Icon - Left Side */}
+                      <button
+                        onClick={() => handleShowQR(token)}
+                        className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#06d6a0]/10 hover:bg-[#06d6a0]/20 border-2 border-[#06d6a0] rounded-lg flex items-center justify-center transition-all cursor-pointer group"
+                        title="Klikněte pro zobrazení QR kódu"
+                      >
+                        <QrCode className="w-12 h-12 sm:w-14 sm:h-14 text-[#06d6a0] group-hover:scale-110 transition-transform" />
+                      </button>
+
+                      {/* Token Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                          <h3 className="font-semibold text-lg sm:text-xl text-[#e6f1ff] truncate">{token.label}</h3>
                           <Badge className={getStatusBadge(token.status)}>
                             {token.status}
                           </Badge>
                         </div>
-                        <div className="text-base text-[#9fb4d0] space-y-1 ml-9">
-                          <div>
-                            <span className="font-medium">Token:</span>{' '}
-                            <code className="bg-[#0f1b33] px-3 py-1 rounded text-sm text-[#06d6a0]">
+                        
+                        <div className="text-sm sm:text-base text-[#9fb4d0] space-y-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <span className="font-medium">Token:</span>
+                            <code className="bg-[#0f1b33] px-2 py-1 rounded text-xs sm:text-sm text-[#06d6a0] break-all">
                               {token.token}
                             </code>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="ml-2 h-8 px-3 text-[#9fb4d0] hover:text-[#e6f1ff]"
+                              className="self-start sm:self-auto h-7 px-2 text-[#9fb4d0] hover:text-[#e6f1ff]"
                               onClick={() => copyToClipboard(token.token)}
                             >
-                              <Copy className="w-4 h-4" />
+                              <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                             </Button>
                           </div>
                           <div>
@@ -267,65 +397,43 @@ const QRManagement = () => {
                             <span className="font-medium">Vytvořeno:</span>{' '}
                             {formatDate(token.created_at)}
                           </div>
+                          {token.notes && (
+                            <div className="mt-2 p-2 bg-[#0f1b33] rounded text-sm">
+                              <span className="font-medium">Poznámky:</span> {token.notes}
+                            </div>
+                          )}
                         </div>
-                      </div>
 
-                      <div className="flex gap-3">
-                        {token.status === 'active' && (
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-2 mt-4">
                           <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleStatusChange(token.id, 'disabled')}
-                            className="border-[#25365a] text-[#ef4444] hover:text-white hover:bg-[#ef4444] hover:border-[#ef4444]"
+                            onClick={() => handleShowQR(token)}
+                            className="bg-[#06d6a0] hover:bg-[#07f0b8] text-[#0a0f1d] font-semibold h-9 px-4 text-sm"
                           >
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Deaktivovat
+                            <QrCode className="w-4 h-4 mr-2" />
+                            Zobrazit QR
                           </Button>
-                        )}
-                        {token.status === 'disabled' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleStatusChange(token.id, 'active')}
-                            className="border-[#25365a] text-[#06d6a0] hover:text-[#0a0f1d] hover:bg-[#06d6a0] hover:border-[#06d6a0]"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Aktivovat
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {token.notes && (
-                      <div className="mt-4 p-4 bg-[#0f1b33] border border-[#25365a] rounded text-base text-[#9fb4d0]">
-                        <span className="font-medium text-[#e6f1ff]">Poznámky:</span> {token.notes}
-                      </div>
-                    )}
-
-                    {token.max_activations && (
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm text-[#9fb4d0] mb-2">
-                          <span>Využití</span>
-                          <span>
-                            {((token.activations_count / token.max_activations) * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-[#0f1b33] rounded-full h-3 border border-[#25365a]">
-                          <div
-                            className="bg-[#06d6a0] h-full rounded-full transition-all"
-                            style={{
-                              width: `${Math.min((token.activations_count / token.max_activations) * 100, 100)}%`
-                            }}
-                          />
+                          {token.status === 'active' ? (
+                            <Button
+                              onClick={() => handleStatusChange(token.id, 'disabled')}
+                              variant="outline"
+                              className="border-[#7a8fb8] text-[#7a8fb8] hover:border-[#ef4444] hover:text-[#ef4444] h-9 px-4 text-sm"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Deaktivovat
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => handleStatusChange(token.id, 'active')}
+                              variant="outline"
+                              className="border-[#06d6a0] text-[#06d6a0] hover:bg-[#06d6a0]/10 h-9 px-4 text-sm"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Aktivovat
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    )}
-
-                    <div className="mt-4 p-4 bg-[#1e3a8a]/10 border border-[#1e3a8a]/30 rounded text-sm">
-                      <div className="font-medium text-[#e6f1ff] mb-2">Aktivační URL:</div>
-                      <code className="text-[#06d6a0] break-all text-sm">
-                        {window.location.origin}/demo/activate/{token.token}
-                      </code>
                     </div>
                   </div>
                 ))}
@@ -333,6 +441,75 @@ const QRManagement = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* QR Code Modal */}
+        <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
+          <DialogContent className="bg-[#10172a] border-[#25365a] text-[#e6f1ff] max-w-md mx-4">
+            <DialogHeader>
+              <DialogTitle className="text-2xl flex items-center gap-2">
+                <QrCode className="h-6 w-6 text-[#06d6a0]" />
+                {selectedToken?.label}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedToken && (
+              <div className="space-y-6">
+                {/* QR Code */}
+                <div className="bg-white p-6 rounded-lg flex items-center justify-center">
+                  <QRCodeSVG
+                    id="qr-code-svg"
+                    value={`${window.location.origin}/demo/activate/${selectedToken.token}`}
+                    size={256}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+
+                {/* Token Info */}
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-[#9fb4d0]">Status:</span>{' '}
+                    <Badge className={getStatusBadge(selectedToken.status)}>
+                      {selectedToken.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-[#9fb4d0]">Aktivace:</span>{' '}
+                    <span className="text-[#e6f1ff]">
+                      {selectedToken.activations_count}
+                      {selectedToken.max_activations && ` / ${selectedToken.max_activations}`}
+                    </span>
+                  </div>
+                  <div className="pt-2">
+                    <div className="text-[#9fb4d0] mb-1">Aktivační URL:</div>
+                    <code className="block bg-[#0f1b33] p-2 rounded text-xs text-[#06d6a0] break-all">
+                      {window.location.origin}/demo/activate/{selectedToken.token}
+                    </code>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={downloadQR}
+                    className="flex-1 bg-[#06d6a0] hover:bg-[#07f0b8] text-[#0a0f1d] font-semibold"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Stáhnout QR
+                  </Button>
+                  <Button
+                    onClick={() => copyToClipboard(selectedToken.token)}
+                    variant="outline"
+                    className="flex-1 border-[#25365a] text-[#e6f1ff] hover:bg-[#25365a]"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Kopírovat URL
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

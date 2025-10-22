@@ -349,11 +349,35 @@ class LearningSummaryResponse(BaseModel):
 # Agent Creation Request/Response Models
 class StartAgentRequest(BaseModel):
     description: str  # User's description of agent they need
+    template_id: Optional[str] = None  # Optional: Start from template
 
 class StartAgentResponse(BaseModel):
     agent_id: str
     questions: List[str]  # 2-3 clarifying questions from AI
     session_id: str
+
+# Template Model
+class AgentTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # Template name
+    description: str  # Short description of template
+    category: str  # e.g., "Customer Support", "Sales", "Technical", "Creative"
+    icon: str  # Emoji or icon identifier
+    preset_description: str  # Pre-filled agent description
+    example_use_cases: List[str]  # List of example use cases
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AgentTemplateResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    icon: str
+    preset_description: str
+    example_use_cases: List[str]
 
 class RefineAgentRequest(BaseModel):
     answers: List[str]  # User's answers to clarifying questions
@@ -1170,6 +1194,242 @@ async def update_qr_token(token_id: str, update_req: UpdateQRTokenRequest, reque
     )
     
     return {"success": True, "message": f"Token status updated to {update_req.status}"}
+
+
+# Event Management & Simplified QR Tickets
+
+@api_router.get("/current-event")
+async def get_current_event(request: Request):
+    """Get current event name (accessible by both admin and demo users)"""
+    user = await require_auth(request)
+    
+    # Get current event from settings or default
+    settings = await db.platform_settings.find_one({})
+    event_name = settings.get("current_event_name", "Default Event") if settings else "Default Event"
+    
+    return {"event_name": event_name}
+
+
+@api_router.post("/admin/set-event")
+async def set_current_event(event_data: dict, request: Request):
+    """Admin: Set current event name"""
+    user = await require_auth(request)
+    
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    event_name = event_data.get("event_name", "Default Event")
+    
+    # Update or create settings
+    await db.platform_settings.update_one(
+        {},
+        {"$set": {"current_event_name": event_name}},
+        upsert=True
+    )
+    
+    logger.info(f"Admin {user['email']} set event name to: {event_name}")
+    
+    return {"success": True, "event_name": event_name}
+
+
+@api_router.post("/admin/quick-ticket")
+async def create_quick_ticket(request: Request):
+    """Admin: One-click QR ticket creation (no form needed)"""
+    user = await require_auth(request)
+    
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get current event name
+    settings = await db.platform_settings.find_one({})
+    event_name = settings.get("current_event_name", "Default Event") if settings else "Default Event"
+    
+    # Count tickets for this event to generate label
+    ticket_count = await db.demo_activation_tokens.count_documents({
+        "label": {"$regex": f"^{event_name}"}
+    })
+    
+    # Generate unique token and label
+    token_str = f"OMEGA-{datetime.now().year}-{str(uuid.uuid4())[:6].upper()}"
+    label = f"{event_name} - Ticket #{ticket_count + 1}"
+    
+    qr_token = DemoActivationToken(
+        token=token_str,
+        label=label,
+        created_by=user["id"],
+        max_activations=None,  # Unlimited
+        notes=f"Auto-generated for {event_name}",
+        activations_count=0,
+        status="active"
+    )
+    
+    doc = qr_token.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.demo_activation_tokens.insert_one(doc)
+    
+    logger.info(f"Admin {user['email']} created quick ticket: {label}")
+    
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://omega-aurora.info')
+    activation_link = f"{frontend_url}/demo/activate/{token_str}"
+    
+    return {
+        "id": qr_token.id,
+        "token": token_str,
+        "label": label,
+        "activation_link": activation_link,
+        "event_name": event_name,
+        "status": "active",
+        "created_at": doc['created_at']
+    }
+
+
+@api_router.post("/demo/create-ticket")
+async def create_demo_ticket(request: Request):
+    """Demo user: Create QR ticket for sharing (auto uses parent event, limited to 7 tickets within 12h of activation)"""
+    user = await require_auth(request)
+    
+    # Check if demo account
+    if not user.get("is_demo"):
+        raise HTTPException(status_code=403, detail="Only demo accounts can create gift tickets")
+    
+    # Check 12-hour limit since activation
+    created_at = user.get("created_at")
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+    
+    time_since_activation = datetime.now(timezone.utc) - created_at
+    hours_since_activation = time_since_activation.total_seconds() / 3600
+    
+    if hours_since_activation > 12:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Gift ticket creation expired. You can only create tickets within 12 hours of activation. ({int(hours_since_activation)}h elapsed)"
+        )
+    
+    # Check 7 ticket limit
+    user_ticket_count = await db.demo_activation_tokens.count_documents({
+        "created_by": user["id"]
+    })
+    
+    if user_ticket_count >= 7:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Gift ticket limit reached. You can only create 7 tickets per demo account. ({user_ticket_count}/7 used)"
+        )
+    
+    # Get event name from parent activation token
+    parent_token = user.get("demo_activation_token")
+    event_name = "Default Event"  # Fallback
+    
+    if parent_token:
+        parent_token_doc = await db.demo_activation_tokens.find_one({"token": parent_token})
+        if parent_token_doc:
+            # Extract event name from parent ticket label (format: "Event Name - Ticket #X")
+            parent_label = parent_token_doc.get("label", "")
+            if " - Ticket #" in parent_label:
+                event_name = parent_label.split(" - Ticket #")[0]
+            else:
+                event_name = parent_label
+    
+    # Generate unique token and label
+    token_str = f"DEMO-{datetime.now().year}-{str(uuid.uuid4())[:6].upper()}"
+    user_name = user.get("name", "User").split()[0]  # First name
+    label = f"{event_name} - {user_name} Gift #{user_ticket_count + 1}"
+    
+    qr_token = DemoActivationToken(
+        token=token_str,
+        label=label,
+        created_by=user["id"],
+        max_activations=None,  # Unlimited
+        notes=f"Gift ticket from demo user for {event_name}",
+        activations_count=0,
+        status="active"
+    )
+    
+    doc = qr_token.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.demo_activation_tokens.insert_one(doc)
+    
+    logger.info(f"Demo user {user.get('id')} created gift ticket: {label}")
+    
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://omega-aurora.info')
+    activation_link = f"{frontend_url}/demo/activate/{token_str}"
+    
+    # Calculate remaining time and tickets
+    hours_remaining = max(0, 12 - hours_since_activation)
+    tickets_remaining = 7 - (user_ticket_count + 1)
+    
+    return {
+        "id": qr_token.id,
+        "token": token_str,
+        "label": label,
+        "activation_link": activation_link,
+        "event_name": event_name,
+        "status": "active",
+        "created_at": doc['created_at'],
+        "tickets_remaining": tickets_remaining,
+        "hours_remaining": round(hours_remaining, 1)
+    }
+
+
+@api_router.get("/demo/my-tickets")
+async def get_my_tickets(request: Request):
+    """Demo user: Get their shared tickets for easy resharing"""
+    user = await require_auth(request)
+    
+    tokens = await db.demo_activation_tokens.find(
+        {"created_by": user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(length=20)
+    
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://omega-aurora.info')
+    
+    for token in tokens:
+        token["activation_link"] = f"{frontend_url}/demo/activate/{token['token']}"
+    
+    return {"tickets": tokens}
+
+
+@api_router.get("/demo/gifting-status")
+async def get_gifting_status(request: Request):
+    """Get demo user's gifting status (remaining tickets and time)"""
+    user = await require_auth(request)
+    
+    if not user.get("is_demo"):
+        return {
+            "can_gift": False,
+            "tickets_used": 0,
+            "tickets_remaining": 0,
+            "hours_remaining": 0,
+            "reason": "Not a demo account"
+        }
+    
+    # Calculate time since activation
+    created_at = user.get("created_at")
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+    
+    time_since_activation = datetime.now(timezone.utc) - created_at
+    hours_since_activation = time_since_activation.total_seconds() / 3600
+    hours_remaining = max(0, 12 - hours_since_activation)
+    
+    # Count tickets created
+    tickets_used = await db.demo_activation_tokens.count_documents({
+        "created_by": user["id"]
+    })
+    tickets_remaining = max(0, 7 - tickets_used)
+    
+    can_gift = hours_remaining > 0 and tickets_remaining > 0
+    
+    return {
+        "can_gift": can_gift,
+        "tickets_used": tickets_used,
+        "tickets_remaining": tickets_remaining,
+        "hours_remaining": round(hours_remaining, 1),
+        "hours_elapsed": round(hours_since_activation, 1),
+        "reason": "Expired" if hours_remaining <= 0 else ("Limit reached" if tickets_remaining <= 0 else "Active")
+    }
+
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -2844,6 +3104,56 @@ from openai_service import (
 from learning_loop import initialize_master_prompt, process_learning_loop
 
 
+# Agent Templates Endpoints
+
+@api_router.get("/agent-templates")
+async def get_agent_templates():
+    """
+    Get all active agent templates.
+    Public endpoint - no authentication required.
+    """
+    try:
+        templates_cursor = db.agent_templates.find(
+            {"is_active": True},
+            {"_id": 0}
+        ).sort("category", 1)
+        
+        templates = await templates_cursor.to_list(length=100)
+        
+        return {
+            "templates": templates,
+            "count": len(templates)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting agent templates: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/agent-templates/{template_id}")
+async def get_agent_template(template_id: str):
+    """
+    Get a specific agent template by ID.
+    Public endpoint - no authentication required.
+    """
+    try:
+        template = await db.agent_templates.find_one(
+            {"id": template_id, "is_active": True},
+            {"_id": 0}
+        )
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        return template
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting agent template: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Agent Creation Endpoints
 
 @api_router.post("/start-agent", response_model=StartAgentResponse)
@@ -2851,6 +3161,7 @@ async def start_agent_creation(request: StartAgentRequest, http_request: Request
     """
     Step 1: Start agent creation process.
     Generate clarifying questions based on user's description.
+    Optionally start from a template.
     """
     user = await require_auth(http_request)
     
@@ -2862,8 +3173,28 @@ async def start_agent_creation(request: StartAgentRequest, http_request: Request
         
         master_prompt = master_prompt_doc["content"]
         
+        # If template_id is provided, get template and merge with description
+        description = request.description
+        template_used = None
+        
+        if request.template_id:
+            template = await db.agent_templates.find_one({
+                "id": request.template_id,
+                "is_active": True
+            })
+            
+            if template:
+                # Merge template preset with user description
+                description = f"{template['preset_description']}\n{request.description}".strip()
+                template_used = {
+                    "id": template["id"],
+                    "name": template["name"],
+                    "category": template["category"]
+                }
+                logger.info(f"Using template: {template['name']} for agent creation")
+        
         # Generate clarifying questions
-        questions, tokens_used = await generate_agent_questions(request.description, master_prompt)
+        questions, tokens_used = await generate_agent_questions(description, master_prompt)
         
         # Create initial agent document
         agent_id = str(uuid.uuid4())
@@ -2872,21 +3203,22 @@ async def start_agent_creation(request: StartAgentRequest, http_request: Request
         agent_doc = {
             "id": agent_id,
             "user_id": user["id"],
-            "description": request.description,
+            "description": description,
             "generated_prompt": "",  # Will be filled after finalize
             "master_prompt_version": master_prompt_doc["version"],
             "score": None,
             "metadata": {
                 "session_id": session_id,
                 "questions": questions,
-                "status": "in_progress"
+                "status": "in_progress",
+                "template_used": template_used
             },
             "created_at": datetime.now(timezone.utc)
         }
         
         await db.agents.insert_one(agent_doc)
         
-        logger.info(f"Started agent creation: {agent_id}")
+        logger.info(f"Started agent creation: {agent_id} (template: {template_used['name'] if template_used else 'none'})")
         
         return {
             "agent_id": agent_id,
@@ -3206,6 +3538,130 @@ async def transform_agent_to_v9(agent_id: str, http_request: Request):
         
     except Exception as e:
         logger.error(f"Error in v-9 transformation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Agent Sharing Endpoints
+
+@api_router.post("/agent/{agent_id}/share")
+async def share_agent(agent_id: str, http_request: Request):
+    """
+    Make an agent publicly shareable. Returns a public share URL.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Get agent document
+        agent_doc = await db.agents.find_one({"id": agent_id, "user_id": user["id"]})
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Check if already shared
+        is_shared = agent_doc.get("metadata", {}).get("is_shared", False)
+        share_token = agent_doc.get("metadata", {}).get("share_token")
+        
+        if not is_shared or not share_token:
+            # Generate unique share token
+            share_token = str(uuid.uuid4())
+            
+            # Update agent with sharing info
+            await db.agents.update_one(
+                {"id": agent_id},
+                {"$set": {
+                    "metadata.is_shared": True,
+                    "metadata.share_token": share_token,
+                    "metadata.shared_at": datetime.now(timezone.utc)
+                }}
+            )
+        
+        logger.info(f"Agent {agent_id} shared by user {user['id']}")
+        
+        return {
+            "share_token": share_token,
+            "share_url": f"/shared/{share_token}",
+            "agent_id": agent_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sharing agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/agent/{agent_id}/unshare")
+async def unshare_agent(agent_id: str, http_request: Request):
+    """
+    Make an agent private again (revoke public sharing).
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Get agent document
+        agent_doc = await db.agents.find_one({"id": agent_id, "user_id": user["id"]})
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Update agent to remove sharing
+        await db.agents.update_one(
+            {"id": agent_id},
+            {"$set": {
+                "metadata.is_shared": False,
+                "metadata.unshared_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        logger.info(f"Agent {agent_id} unshared by user {user['id']}")
+        
+        return {
+            "message": "Agent is now private",
+            "agent_id": agent_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error unsharing agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/shared/{share_token}")
+async def get_shared_agent(share_token: str):
+    """
+    Public endpoint - Get agent by share token (no authentication required).
+    """
+    try:
+        # Find agent by share token
+        agent_doc = await db.agents.find_one({
+            "metadata.share_token": share_token,
+            "metadata.is_shared": True
+        })
+        
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Shared agent not found")
+        
+        # Get creator info (email only)
+        creator = await db.users.find_one({"id": agent_doc["user_id"]})
+        creator_email = creator.get("email", "Anonymous") if creator else "Anonymous"
+        
+        # Return public agent data (without sensitive user info)
+        return {
+            "agent_name": agent_doc.get("metadata", {}).get("agent_name", "Unnamed Agent"),
+            "short_description": agent_doc.get("short_description", ""),
+            "description": agent_doc.get("description", ""),
+            "generated_prompt": agent_doc.get("generated_prompt", ""),
+            "has_v9": bool(agent_doc.get("metadata", {}).get("v9_prompt")),
+            "v9_prompt": agent_doc.get("metadata", {}).get("v9_prompt"),
+            "created_at": agent_doc.get("created_at"),
+            "shared_at": agent_doc.get("metadata", {}).get("shared_at"),
+            "creator_email": creator_email,
+            "master_prompt_version": agent_doc.get("master_prompt_version", "")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting shared agent: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3627,9 +4083,123 @@ async def startup_event():
     # Initialize Ω_v1.0 if not exists
     await initialize_master_prompt()
     
+    # Initialize agent templates if not exists
+    await initialize_agent_templates()
+    
     # Start the scheduler
     scheduler.start()
     logger.info("⏰ Learning loop scheduler started (4:20 AM CET daily)")
+
+
+async def initialize_agent_templates():
+    """Initialize default agent templates if they don't exist."""
+    try:
+        # Check if templates already exist
+        existing_count = await db.agent_templates.count_documents({})
+        if existing_count > 0:
+            logger.info(f"✓ Agent templates already initialized ({existing_count} templates)")
+            return
+        
+        # Define default templates
+        templates = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Zákaznická Podpora",
+                "description": "Agent pro profesionální zákaznický servis",
+                "category": "Support",
+                "icon": "💁‍♂️",
+                "preset_description": "Potřebuji AI agenta pro zákaznickou podporu, který bude:",
+                "example_use_cases": [
+                    "Odpovídání na časté dotazy",
+                    "Řešení technických problémů",
+                    "Eskalace složitých případů"
+                ],
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Sales & Kvalifikace Leadů",
+                "description": "Agent pro prodejní komunikaci a kvalifikaci zákazníků",
+                "category": "Sales",
+                "icon": "💼",
+                "preset_description": "Potřebuji prodejního AI agenta, který dokáže kvalifikovat zájemce a:",
+                "example_use_cases": [
+                    "Zjišťování potřeb zákazníků",
+                    "Prezentace produktů",
+                    "Domluvení schůzek s obchodníky"
+                ],
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Technický Asistent",
+                "description": "Agent pro technickou dokumentaci a programování",
+                "category": "Technical",
+                "icon": "💻",
+                "preset_description": "Potřebuji technického AI asistenta, který pomůže s:",
+                "example_use_cases": [
+                    "Vysvětlování kódu a dokumentace",
+                    "Debugging a řešení chyb",
+                    "Best practices a doporučení"
+                ],
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Content & Copywriting",
+                "description": "Agent pro tvorbu obsahu a marketingových textů",
+                "category": "Creative",
+                "icon": "✍️",
+                "preset_description": "Potřebuji kreativního AI agenta pro psaní obsahu, který dokáže:",
+                "example_use_cases": [
+                    "Tvorba blog příspěvků",
+                    "Psaní social media posts",
+                    "Email marketing kampaně"
+                ],
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Educator & Tutor",
+                "description": "Agent pro vzdělávání a výuku",
+                "category": "Education",
+                "icon": "🎓",
+                "preset_description": "Potřebuji vzdělávacího AI agenta, který bude:",
+                "example_use_cases": [
+                    "Vysvětlování složitých konceptů",
+                    "Tvorba kvízů a testů",
+                    "Personalizované učení"
+                ],
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Analytik & Data Scientist",
+                "description": "Agent pro analýzu dat a reporting",
+                "category": "Analytics",
+                "icon": "📊",
+                "preset_description": "Potřebuji analytického AI agenta, který mi pomůže s:",
+                "example_use_cases": [
+                    "Analýza obchodních dat",
+                    "Tvorba reportů a grafů",
+                    "Prediktivní modely"
+                ],
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc)
+            }
+        ]
+        
+        # Insert templates into database
+        await db.agent_templates.insert_many(templates)
+        logger.info(f"✓ Initialized {len(templates)} agent templates")
+        
+    except Exception as e:
+        logger.error(f"Error initializing agent templates: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
