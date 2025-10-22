@@ -57,6 +57,11 @@ const AgentCreator = () => {
   const [concepts, setConcepts] = useState([]);
   const [finalPrompt, setFinalPrompt] = useState('');
   
+  // v-9 Protocol State
+  const [v9Prompt, setV9Prompt] = useState('');
+  const [isV9Transformed, setIsV9Transformed] = useState(false);
+  const [isTransformingV9, setIsTransformingV9] = useState(false);
+  
   // UI State
   const [isLoading, setIsLoading] = useState(false);
   const [tokensUsed, setTokensUsed] = useState(0);
