@@ -266,6 +266,117 @@ class FeedbackRequest(BaseModel):
     comment: Optional[str] = None
     keywords: Optional[List[str]] = None
 
+# Ω-KOMPRESNÍ ROVNICE (Learning Loop) Models
+
+# Agent Model - Stores all created agents
+class Agent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    description: str  # User's original description of what agent they need
+    generated_prompt: str  # Final agent prompt in markdown
+    master_prompt_version: str  # e.g., "Ω_v1.0", "Ω_v1.1"
+    score: Optional[float] = None  # Average feedback rating (1-5)
+    metadata: Optional[dict] = None  # Tags, category, etc.
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AgentResponse(BaseModel):
+    id: str
+    description: str
+    generated_prompt: str
+    master_prompt_version: str
+    score: Optional[float]
+    created_at: datetime
+
+# ConversationEvent Model - Stores all conversations for learning
+class ConversationEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    agent_id: str  # Links to Agent document
+    user_id: str
+    messages: List[dict]  # [{role: "user"|"assistant", content: str, timestamp: datetime}]
+    scores: Optional[List[int]] = None  # Mid-conversation ratings
+    feedback_rating: Optional[int] = None  # Final 1-5 rating
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# MasterPrompt Model - Version control for evolving Master Prompt
+class MasterPrompt(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    version: str  # "Ω_v1.0", "Ω_v1.1", etc.
+    content: str  # Full Czech prompt text
+    status: Literal["active", "pending", "archived"] = "pending"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[str] = None  # Admin user_id
+    patterns_learned: Optional[List[str]] = None  # Summary of what was learned
+
+class MasterPromptResponse(BaseModel):
+    id: str
+    version: str
+    content: str
+    status: str
+    created_at: datetime
+    approved_at: Optional[datetime]
+    patterns_learned: Optional[List[str]]
+
+class MasterPromptApproveRequest(BaseModel):
+    version: str
+
+# LearningSummary Model - Daily learning loop results
+class LearningSummary(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    date: str  # YYYY-MM-DD format
+    summary_text: str  # AI-generated summary of patterns
+    patterns_extracted: List[str]  # List of identified patterns/themes
+    proposed_master_prompt_changes: str  # Proposed new Master Prompt content
+    approved: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LearningSummaryResponse(BaseModel):
+    id: str
+    date: str
+    summary_text: str
+    patterns_extracted: List[str]
+    approved: bool
+    created_at: datetime
+
+# Agent Creation Request/Response Models
+class StartAgentRequest(BaseModel):
+    description: str  # User's description of agent they need
+
+class StartAgentResponse(BaseModel):
+    agent_id: str
+    questions: List[str]  # 2-3 clarifying questions from AI
+    session_id: str
+
+class RefineAgentRequest(BaseModel):
+    answers: List[str]  # User's answers to clarifying questions
+
+class RefineAgentResponse(BaseModel):
+    concepts: List[dict]  # Concept map data for visualization
+    follow_up_questions: Optional[List[str]] = None
+
+class FinalizeAgentRequest(BaseModel):
+    confirm: bool = True
+
+class FinalizeAgentResponse(BaseModel):
+    agent_prompt_markdown: str
+    tokens_used: int
+    agent_id: str
+
+# Admin Metrics Response
+class AdminMetricsResponse(BaseModel):
+    active_users: int
+    agents_created_today: int
+    token_consumption_24h: int
+    top_keywords: List[dict]  # [{keyword: str, count: int}]
+
 # Platform Settings Model
 class PlatformSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
