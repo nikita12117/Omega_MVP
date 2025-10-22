@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,15 +25,45 @@ import apiClient from '@/lib/axios';
 import OmegaLogo from '@/components/OmegaLogo';
 
 const MyAgents = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [agents, setAgents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [viewingV9, setViewingV9] = useState(false);
 
+  // Load user first
   useEffect(() => {
-    loadAgents();
-  }, []);
+    const loadUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await apiClient.get('/auth/me');
+        setUser(response.data);
+      } catch (error) {
+        console.error('Error loading user:', error);
+        localStorage.removeItem('token');
+        navigate('/login');
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    loadUser();
+  }, [navigate]);
+
+  // Load agents after user is loaded
+  useEffect(() => {
+    if (user) {
+      loadAgents();
+    }
+  }, [user]);
 
   const loadAgents = async () => {
     setIsLoading(true);
