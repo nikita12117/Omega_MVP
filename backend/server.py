@@ -701,13 +701,22 @@ async def get_current_user_profile(request: Request):
         resource_id=user["id"]
     )
     
+    demo_expires_iso = None
+    if user.get("demo_expires_at"):
+        if isinstance(user["demo_expires_at"], str):
+            demo_expires_iso = user["demo_expires_at"]
+        else:
+            demo_expires_iso = user["demo_expires_at"].isoformat()
+    
     return UserProfileResponse(
         id=user["id"],
-        email=user["email"],
-        name=user["name"],
+        email=user.get("email"),
+        name=user.get("name"),
         picture=user.get("picture"),
         is_admin=user.get("is_admin", False),
         is_banned=user.get("is_banned", False),
+        is_demo=user.get("is_demo", False),
+        demo_expires_at=demo_expires_iso,
         omega_tokens_balance=user["omega_tokens_balance"],
         locked_price_99=user.get("locked_price_99"),
         locked_price_399=user.get("locked_price_399"),
