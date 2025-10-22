@@ -5,15 +5,15 @@
   },
   {
     "content": "Apply Ω-Aurora design tokens to global CSS and Tailwind config (colors, typography, shadows, gradients)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Create OmegaLogo component (SVG with neural pathways, teal accent gradient)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Build EducationSelector component with Czech content from educationTexts.js (3 docs × 3 perspectives = 9 variants)",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Create public /education route (no auth required, two-pane layout with tabs + reader)",
