@@ -384,7 +384,7 @@ Response (200 OK):
    - ✅ Admin login and QR management
 
 ### Current Environment
-- **Preview URL**: https://quantum-codex-1.preview.emergentagent.com
+- **Preview URL**: https://omegatalker.preview.emergentagent.com
 - **Backend**: Port 8001 (supervisor managed)
 - **Frontend**: Port 3000 (supervisor managed)
 - **Database**: MongoDB connected

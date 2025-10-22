@@ -2487,7 +2487,7 @@ async def get_referral_stats(request: Request):
         total_rewards = user.get("referral_count", 0) * reward_per_referral
         
         # Generate referral link
-        base_url = os.environ.get("FRONTEND_URL", "https://quantum-codex-1.preview.emergentagent.com")
+        base_url = os.environ.get("FRONTEND_URL", "https://omegatalker.preview.emergentagent.com")
         referral_link = f"{base_url}/login?ref={user['referral_code']}"
         
         return ReferralStatsResponse(
