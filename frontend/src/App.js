@@ -46,7 +46,7 @@ function App() {
             <Route path="/demo/activate/:token" element={<DemoActivate />} />
             <Route path="/login" element={<Login />} />
             <Route path="/privacy" element={<Privacy />} />
-            <Route path="/demo" element={<Demo />} />
+            <Route path="/demo" element={<AgentCreator />} />
             <Route 
               path="/tokens" 
               element={
