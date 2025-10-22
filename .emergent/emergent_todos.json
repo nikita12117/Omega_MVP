@@ -5,27 +5,23 @@
   },
   {
     "content": "Update Demo.jsx to use /api/chat instead of /api/generate (3-stage legacy)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Add gating logic to Demo.jsx (unauthenticated, demo expiry, phone verification)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Integrate FeedbackDialog after successful generation (is_final_output=true)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Integrate GoogleUpgradeDialog after feedback submission for demo users",
-    "status": "pending"
-  },
-  {
-    "content": "Add demo expiry countdown badge to Demo page header",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Handle 401 demo_expired and 403 phone_verification_required errors in axios interceptor",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Test complete demo flow end-to-end with screenshot verification",
