@@ -21,6 +21,10 @@ import HistoryList from '@/components/history/HistoryList';
 import HistoryDetail from '@/components/history/HistoryDetail';
 import PhoneVerificationModal from '@/components/phone/PhoneVerificationModal';
 import ReferralModal from '@/components/referral/ReferralModal';
+import DemoActivationPrompt from '@/components/demo/DemoActivationPrompt';
+import DemoExpiredPanel from '@/components/demo/DemoExpiredPanel';
+import FeedbackDialog from '@/components/demo/FeedbackDialog';
+import GoogleUpgradeDialog from '@/components/demo/GoogleUpgradeDialog';
 
 
 
@@ -108,6 +112,8 @@ export default function Demo() {
   const [sessionId] = useState(() => Date.now().toString());
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   
@@ -232,28 +238,23 @@ export default function Demo() {
     setIsLoading(true);
 
     try {
-      // Call backend API
-      const response = await apiClient.post('/generate', {
-        session_id: sessionId,
-        stage: currentStage,
-        pattern: null,
-        messages: messages.slice(-10).map(msg => ({
-          id: msg.id,
+      // Call new natural conversation API
+      const response = await apiClient.post('/chat', {
+        message: currentInput,
+        messages: messages.map(msg => ({
           role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp
+          content: msg.content
         })),
-        user_input: currentInput,
+        session_id: sessionId,
         master_prompt: masterPrompt
       });
 
       const data = response.data;
 
       // Update token balance from response if available
-      if (data.usage && data.usage.tokens) {
+      if (data.tokens_used) {
         // Fetch updated balance from API
         try {
-          const token = localStorage.getItem('token');
           const profileResponse = await apiClient.get('/auth/me');
           setOmegaTokens(profileResponse.data.omega_tokens_balance);
           localStorage.setItem('omega_tokens', profileResponse.data.omega_tokens_balance);
@@ -262,43 +263,33 @@ export default function Demo() {
         }
       }
 
-      // Handle response based on stage
-      if (data.stage === 'clarify' && data.questions) {
-        const questionsText = data.questions.map((q, i) => `${i + 1}. ${q}`).join('\n\n');
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Great! To help you create the best prompt, I have a few clarifying questions:\n\n${questionsText}\n\nPlease answer these questions, and we'll move to the optimization phase.`,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setStageProgress(33);
-      } else if (data.stage === 'optimize' && data.suggestions) {
-        const suggestionsText = data.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n\n');
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Excellent! Based on your requirements, here are my optimization suggestions:\n\n${suggestionsText}\n\nReady to generate your complete Omega prompt? Just confirm, and I'll assemble it for you.`,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setCurrentStage('final');
-        setStageProgress(66);
-      } else if (data.stage === 'final' && data.prompt_markdown) {
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Perfect! I\'ve assembled your complete Omega prompt. You can see it in the "Generated Prompt" panel on the right. Feel free to copy it and use it in your application!',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setGeneratedPrompt(data.prompt_markdown);
+      // Natural conversation - AI responds directly
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.response,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      // If final output detected, show feedback dialog
+      if (data.is_final_output) {
+        setGeneratedPrompt(data.response);
         setStageProgress(100);
         toast.success('Omega prompt generated successfully!');
         
+        // Show feedback dialog after generation
+        setTimeout(() => {
+          setShowFeedback(true);
+        }, 500);
+        
         // Automatically save to history
         const conversationContext = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-        await saveToHistory(conversationContext + `\n\nuser: ${currentInput}`, data.prompt_markdown);
+        await saveToHistory(conversationContext + `\n\nuser: ${currentInput}`, data.response);
+      } else {
+        // Update progress based on conversation length
+        const progress = Math.min(90, messages.length * 15);
+        setStageProgress(progress);
       }
 
     } catch (error) {
