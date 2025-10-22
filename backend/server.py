@@ -3093,6 +3093,8 @@ async def get_my_agents(
             
             # Extract agent name from generated_prompt (first heading)
             agent_name = "Unnamed Agent"
+            short_desc = agent.get("description", "")[:100] + "..."  # Fallback
+            
             if agent.get("generated_prompt"):
                 lines = agent["generated_prompt"].split("\n")
                 for line in lines:
@@ -3101,10 +3103,23 @@ async def get_my_agents(
                         agent_name = line.replace("#", "").strip()
                         break
             
+            # Use short_description from metadata if available, or extract from v9 prompt
+            if agent.get("metadata", {}).get("short_description"):
+                short_desc = agent["metadata"]["short_description"]
+            elif agent.get("metadata", {}).get("v9_prompt"):
+                # Extract description from v9 prompt (usually more detailed)
+                v9_lines = agent["metadata"]["v9_prompt"].split("\n")
+                for i, line in enumerate(v9_lines):
+                    if "ROLE" in line or "## ROLE" in line:
+                        if i + 1 < len(v9_lines):
+                            short_desc = v9_lines[i + 1].strip()[:200]
+                            break
+            
             enriched_agents.append({
                 **agent,
                 "total_tokens_used": total_tokens,
                 "agent_name": agent_name,
+                "short_description": short_desc,
                 "has_v9": bool(agent.get("metadata", {}).get("v9_prompt"))
             })
         
