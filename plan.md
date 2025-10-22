@@ -1,137 +1,125 @@
-# Ω-Aurora-Codex – Admin Dashboard Plan
+# Ω-Aurora Codex – QR Demo Accounts Transformation Plan
 
 ## 1) Executive Summary
-✅ **COMPLETED** - Admin Dashboard with analytics, user management, and platform settings fully implemented. Admin becomes the default landing after login. UI uses Aurora theme (Cosmic Midnight bg, Aurora Green accents) with Shadcn components, Recharts for charts, Framer Motion for micro-animations. Backend includes Settings collection, user banning, token adjustments, and analytics endpoints.
+We will pivot from OAuth-first access to a frictionless QR → special link → instant demo account flow while preserving all admin and compliance capabilities. Scanning a conference QR opens a special activation URL that provisions an anonymous demo account (UUID), grants 100,000 tokens, and unlocks the generator for 72 hours. Education remains public. Existing Google OAuth remains as an upgrade path to a full account. Phone verification stays server-side but is hidden from demo users’ UI. Referral is adapted to work with demo activations. Admin gains tools to generate/track QR activation tokens and manage demo users.
 
-## 2) Objectives - STATUS: ✅ ALL COMPLETED
-- ✅ Overview analytics: revenue, token consumption history, avg/min/max per generation, users activity (24h, 7d), total users
-- ✅ Users management: searchable/sortable table with **sequential IDs** (admin=1, others by registration order), activity highlighting, user detail with **red ban/green unban** buttons and manual token adjust, view user's generated agents
-- ✅ Platform settings: global toggle between Emergent LLM key vs custom OpenAI key, model selection (GPT-4.1/GPT-4/GPT-3.5-turbo), token package prices, default master prompt with **blue→green save button** on change
-- ✅ Navigation: TopNav shows Dashboard button for admin; post-login redirect for admin → /admin/overview
+## 2) Objectives
+- Zero-friction conference onboarding: Scan → Activate → Generate Omega prompt
+- Preserve current admin dashboard and analytics; add QR token generation
+- Keep GDPR/Privacy features intact (export/delete/audit)
+- Hide phone verification for demo users; keep enforcement for non-demo users
+- Adapt referral to demo accounts (optional ref capture on activation)
+- Offer email collection after successful feedback submission
+- Follow Ω-Aurora design guidelines (cosmic/aurora theme) with testable, accessible UI
 
-## 3) UI/UX Design Guidelines (Applied)
-- ✅ Colors per design_guidelines.md: primary accents = Aurora Green (#00FFAA)/Cyan; dark backgrounds = Cosmic Midnight; Red for destructive actions (ban)
-- ✅ Typography: Inter for UI, JetBrains Mono for code/markdown; semantic scales from guidelines
-- ✅ Components: Shadcn/UI (Button, Card, Tabs, Table, Input, Select, Switch, Dialog, AlertDialog, Badge, Tooltip, Separator, Popover, Sheet)
-- ✅ Accessibility: WCAG AA contrast, focus-visible rings, full keyboard nav
-- ✅ Testability: Every interactive element includes data-testid (kebab-case)
-- ✅ Motion: micro-interactions only (150–200ms), no transition: all
-- ✅ **NEW**: Button state colors - Save buttons: Deep Blue (disabled) → Aurora Green (enabled with changes)
-- ✅ **NEW**: Action buttons: Red (ban/destructive) → Green (unban/positive)
+## 3) UI/UX Design Guidelines (aligned with design_guidelines.md)
+- Palette (per guidelines):
+  - background: #0a0f1d (cosmic night)
+  - primary: #1e3a8a (deep blue)
+  - accent: #06d6a0 (quantum teal)
+  - foreground: #e6f1ff; borders: #25365a; surfaces: #10172a / #0f1b33
+  - Gradients: aurora_horizon/teal_breeze/polar_mist with coverage <20% viewport, never on reading blocks
+- Typography: Inter (UI, headings), JetBrains Mono (code/prompt). Education pages set lang=cs
+- Components: Use shadcn/ui from /frontend/src/components/ui only (Button, Tabs, Card, ScrollArea, Sonner, Dialog, Table, etc.)
+- Navigation: Ω logo left; nav items: Education | Demo | Dashboard; keys/profile on right
+- Accessibility: WCAG AA contrast, visible focus rings, keyboard navigation
+- Testing: data-testid on all interactive/critical elements (e.g., demo-send-button)
+- Motion: framer-motion micro-interactions; animate opacity/transform only; respect prefers-reduced-motion
+- Data states: Explicit loading (skeleton), empty, and error states for chat, education loader, and admin tables
 
-## 4) Implementation Status
+## 4) Implementation Steps (Phased)
 
-### Phase 1: Backend Foundation - ✅ COMPLETED
-1. ✅ Extended models:
-   - User: added is_banned: bool, last_login_at: datetime
-   - GeneratedPrompt: added user_id: str for user linkage
-   - Settings: new collection with id="global", use_emergent_key, custom_openai_api_key, selected_model, price_99, price_399, default_master_prompt
-   - **AdminUserListItem**: added sequence_id field for sequential user numbering
+Phase 0 – Foundations & Content
+- Apply design tokens and global styles per design_guidelines.md
+- Integrate EducationSelector with the provided educationTexts (Ω⁻⁹|Ω⁻⁴|Ω∞ × child/adult-nontech/adult-tech)
+- Public route /education with two-pane layout (tabs + reader), max-w-prose reading width
 
-2. ✅ Auth endpoints:
-   - Login/session: sets last_login_at=now; if is_banned → 403 + no cookie
-   - Ban enforcement in /api/generate: banned users cannot use API
+Phase 1 – Backend: QR Demo Accounts
+- Data models (Mongo, UUID IDs):
+  - users: id, is_demo (bool), demo_expires_at (UTC), email (nullable), email_optin (bool), phone_verified, tokens_balance (int), referred_by (nullable), created_at (UTC)
+  - demo_activation_tokens: id, token (short unique), created_by (admin id), max_activations (int, default unlimited or configured), activations_count (int), status (active|disabled|expired), created_at (UTC)
+  - generated_prompts, token_transactions, audit_logs, settings (reuse existing)
+- Endpoints (FastAPI, all prefixed /api):
+  - POST /api/demo/activate: body { token } → validate token; create user { is_demo=true, tokens_balance=100000, demo_expires_at=now+72h }; issue JWT; increment token activations_count; return user + jwt
+  - GET /api/auth/me: include is_demo, demo_expires_at, tokens_balance
+  - Middleware/guard: On generator endpoints, if is_demo → ensure now < demo_expires_at; else 401 with reason "demo_expired". For non-demo: generator requires phone_verified or is_admin
+  - POST /api/feedback: body { rating, comment, keywords } → store; returns ok
+  - POST /api/email-optin: body { email } → attach to current user; validate minimal format
+  - Referral (optional): activation reads ?ref=CODE → store on user.referred_by; record a token_transaction reward if configured in settings
+- Logging/audit: log /demo/activate and generator usage in audit_logs
 
-3. ✅ Admin endpoints (all require admin):
-   - GET /api/admin/overview: returns metrics (revenue, tokens history/day, avg/min/max, active users)
-   - GET /api/admin/users: **returns users with sequence_id** (admin=1, others sequential by registration), sorting/search
-   - PATCH /api/admin/users/{id}/ban & /unban
-   - POST /api/admin/users/{id}/tokens/adjust: adjusts balance with delta (non-negative enforcement)
-   - GET /api/admin/users/{id}/agents: lists user's GeneratedPrompt entries
-   - GET/PUT /api/admin/settings: read/update global platform settings
+Phase 2 – Frontend: Activation & Demo Flow
+- Route /demo/activate/:token → calls POST /api/demo/activate, stores JWT (Authorization header via axios interceptor), then redirect to /demo
+- Demo page gating:
+  - If authenticated demo and not expired → show ChatInterface (generator unlocked)
+  - If not authenticated → show “Activate via QR” instructions and optional OAuth upgrade CTA
+  - If demo expired → show expiration panel with upgrade path (Google OAuth) or request new QR
+- ChatInterface updates:
+  - Presets: Customer Support, Lead Qualification, Content Planning, Market Research
+  - 3-stage flow: Clarifying Questions → Optimization Suggestions → Final Omega Prompt (Markdown)
+  - Actions: Generate Agent, Copy Markdown, Clear; Success toast via Sonner
+  - After feedback submission success, open Email Opt-in dialog
+- Education remains public (no auth), accessible from nav
 
-### Phase 2: Frontend (Admin UI) - ✅ COMPLETED
-1. ✅ Routing:
-   - AdminRoutes guard (user.is_admin) protects /admin/* routes
-   - After login: admin → /admin/overview, regular user → /demo
+Phase 3 – Admin Enhancements
+- Admin Dashboard: Add “QR Tokens” tab
+  - Generate tokens: fields { label, max_activations?, notes }
+  - List tokens: token, activations_count, status, created_at; actions: disable, export QR (PNG/SVG) and CSV of links
+  - Token link format: {FRONTEND_URL}/demo/activate/{token}
+  - Optionally batch-generate N tokens
+- Users management: show is_demo, demo_expires_at, tokens_balance; actions: ban/unban, adjust tokens
+- Settings: referral reward for demo activations; toggle Google OAuth upgrade CTA visibility
 
-2. ✅ TopNav:
-   - "Dashboard" link visible only for admins (between Education and Demo)
+Phase 4 – Security, Policies, Compliance
+- JWT claims: { sub, is_demo, is_admin, demo_expires_at }
+- Enforce Authorization header (Safari-compatible) via axios interceptor
+- GDPR endpoints kept: export, delete; ensure demo users are deletable
+- CORS unchanged; bind FastAPI to 0.0.0.0:8001; all routes under /api
+- Rate limits (basic) on /api/demo/activate and /api/generate to mitigate abuse at conferences
 
-3. ✅ Pages:
-   - AdminLayout.jsx: Sidebar navigation (Přehled, Uživatelé, Nastavení Platformy) with mobile Sheet
-   - Overview.jsx: metric cards + Recharts area chart for token history + min/max consumption display
-   - Users.jsx: 
-     * **Sequential ID display** (not UUID)
-     * Search/sort table with sticky header
-     * Activity badges (24h/7d/inactive)
-     * Detail modal with **red ban button** → **green unban button** on state change
-     * Token adjustment ±10k with confirmation
-     * Agents grid (2 cols)
-   - Settings.jsx:
-     * 3 Tabs: API Settings, Token Pricing, Default Master Prompt
-     * **hasChanges state tracking**
-     * **Save buttons**: Deep Blue (disabled) → Aurora Green (when changes detected)
-     * **Master Prompt tab shows current stored prompt**
+Phase 5 – Testing & QA
+- Unit tests for activation expiry math (timezone-aware UTC)
+- E2E happy path: QR scan → activation → chat 3-stage → feedback → email opt-in
+- E2E expired demo guard; non-demo generator blocked (unless phone_verified or admin)
+- Admin token generation, QR export, token disable
+- Frontend lint/bundle check; visual review against design guidelines
 
-4. ✅ Integrations:
-   - Recharts installed and integrated
-   - Shadcn UI components throughout
-   - Sonner toasts for feedback
-   - All controls have data-testid attributes
+Phase 6 – Deployment & Ops
+- No .env changes in code; ensure production env has required vars already
+- Deploy preview, validate flows at https://quantum-codex-1.preview.emergentagent.com
+- Monitor logs; verify mobile Safari demo activation → generator usage
 
-### Phase 3: Polish & Enhancements - ✅ COMPLETED
-1. ✅ **Sequential User IDs**: Admin always ID=1, others numbered by registration order (2, 3, 4...)
-2. ✅ **Color-coded action buttons**: Ban (red) / Unban (green) following Aurora palette
-3. ✅ **Smart save buttons**: Blue when disabled → Green when changes detected
-4. ✅ **Master Prompt display**: Shows current platform-wide master prompt in Settings tab
+## 5) Technical Details
+- UUID usage for all new IDs; timezone-aware datetimes with timezone.utc
+- Collections: users, demo_activation_tokens, generated_prompts, token_transactions, audit_logs, settings (existing + additions)
+- Core API contracts (JSON):
+  - POST /api/demo/activate → { token } ⇒ { user: {id,is_demo,demo_expires_at,tokens_balance}, jwt }
+  - GET /api/auth/me → { id, is_admin, is_demo, demo_expires_at, tokens_balance, phone_verified }
+  - POST /api/feedback → { rating:int, comment:string, keywords:string[] }
+  - POST /api/email-optin → { email }
+  - Admin: POST /api/admin/qr-tokens, GET /api/admin/qr-tokens, PUT /api/admin/qr-tokens/{id} (disable)
+- Generator policy:
+  - Demo users: generator unlocked until expiry; token usage decremented per request
+  - Non-demo users: generator locked unless phone_verified=true or is_admin=true
+- Referral for demo:
+  - If ?ref=CODE present at activation → set user.referred_by; optional reward via settings.referral_reward
+- Storage & security:
+  - Store JWT in localStorage; send via Authorization header; backend also supports httpOnly cookie if present
+  - Audit every activation and admin changes
 
-## 5) Technical Details - IMPLEMENTED
-- ✅ Revenue estimate: sum of (locked_price_99 + locked_price_399) across all users
-- ✅ Token history: aggregated usage transactions grouped by date
-- ✅ Avg/min/max: calculated from openai_tokens_used in usage transactions
-- ✅ Activity metrics: active_24h (last_login_at >= now-24h), active_7d (>= now-7d)
-- ✅ Security: All /api/admin/* require admin authentication
-- ✅ **Sequential ID logic**: Sorted by created_at, admin gets 1, others get 2,3,4... in registration order
-- ✅ Settings enforcement: /api/generate respects use_emergent_key and selected_model from Settings
-- ✅ Ban enforcement: Banned users receive 403 on login and /api/generate
-- ✅ Data types: UUIDv4 for internal IDs, timezone-aware UTC datetimes
+## 6) Next Actions
+- Confirm admin UX for QR token generation (single vs batch, export formats)
+- Confirm whether demo_activation_tokens have max_activations or unlimited per code
+- Approve 72h expiry and 100k token default as constants in settings
+- Approve post-feedback email opt-in UX copy and fields
+- Approve referral rules for demo activations
+- After approval: implement Phases 0–2 first, then Phase 3 admin, then testing
 
-## 6) Testing & Verification - ✅ COMPLETED
-- ✅ Admin login: admin/cUtsuv-8nirbe-tippop → redirects to /admin/overview
-- ✅ API endpoints verified:
-  * /api/admin/overview: returns metrics
-  * /api/admin/users: returns users with sequence_id (admin=1, second user=2)
-  * /api/admin/settings: returns global settings
-- ✅ Frontend build: compiles successfully without errors
-- ✅ Services: backend and frontend running stably
-- ✅ UI verification: Sequential IDs display correctly, color-coded buttons work
-
-## 7) Success Criteria - ✅ ALL MET
-- ✅ Admin sees Dashboard by default after login and can navigate Overview, Users, Settings
-- ✅ Overview shows valid metrics and chart (empty-state safe)
-- ✅ Users table: 
-  * ✅ Shows sequential IDs (admin=1)
-  * ✅ Search and sort functionality works
-  * ✅ Ban/unban with red/green color coding
-  * ✅ Manual token adjust respects non-negative rule
-- ✅ Settings:
-  * ✅ Shows current master prompt
-  * ✅ Save buttons change color based on hasChanges state
-  * ✅ Updates reflected in backend
-- ✅ All interactive elements have data-testid
-- ✅ UI follows Aurora theme with correct color palette
-- ✅ No console errors, frontend builds successfully
-
-## 8) Deployment Status
-**Status**: ✅ PRODUCTION READY
-
-**Access**:
-- URL: https://quantum-codex-1.preview.emergentagent.com/admin/overview
-- Admin credentials: admin / cUtsuv-8nirbe-tippop
-
-**Features Live**:
-- ✅ Admin dashboard with analytics
-- ✅ User management (search, sort, ban/unban, token adjustment)
-- ✅ Platform settings configuration
-- ✅ Sequential user ID display
-- ✅ Color-coded UI elements (Aurora palette)
-- ✅ Smart save buttons with state indication
-
-## 9) Future Enhancements (Optional)
-- Session_id linkage in GeneratedPrompt for accurate min/max agent name display
-- Actual payment integration for precise revenue tracking
-- Date range filters for analytics
-- Pagination for large user datasets (>100 users)
-- Export functionality for user/transaction data
-- Advanced user search filters (by token balance, activity, etc.)
+## 7) Success Criteria
+- Conference visitor can scan QR and within 10 seconds be generating an Omega prompt (≤2 clicks)
+- Demo accounts expire exactly 72h after activation; generator blocked with clear messaging post-expiry
+- Education readable and beautiful under Ω-Aurora guidelines (contrast, spacing, tokens)
+- Admin can generate/export QR tokens and see activations in dashboard
+- GDPR flows operational (export/delete)
+- No hardcoded URLs or secrets; all /api routes functional via REACT_APP_BACKEND_URL
+- UI adheres to data-testid policy and passes basic E2E checks
