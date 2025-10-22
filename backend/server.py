@@ -3397,6 +3397,40 @@ async def admin_trigger_learning(http_request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.delete("/admin/cleanup-incomplete-agents")
+async def admin_cleanup_incomplete_agents(http_request: Request):
+    """
+    Admin: Delete incomplete agents that were never finalized.
+    Removes agents older than 24h with no generated_prompt.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
+        
+        # Delete incomplete agents
+        result = await db.agents.delete_many({
+            "created_at": {"$lt": yesterday},
+            "$or": [
+                {"generated_prompt": {"$exists": False}},
+                {"generated_prompt": ""}
+            ]
+        })
+        
+        logger.info(f"Cleaned up {result.deleted_count} incomplete agents")
+        
+        return {
+            "message": f"Cleaned up {result.deleted_count} incomplete agents",
+            "deleted_count": result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cleaning up agents: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
