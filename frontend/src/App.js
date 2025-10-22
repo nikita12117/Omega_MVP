@@ -48,6 +48,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/demo" element={<AgentCreator />} />
+            <Route path="/my-agents" element={<MyAgents />} />
             <Route 
               path="/tokens" 
               element={
