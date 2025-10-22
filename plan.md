@@ -21,7 +21,256 @@ Building a self-evolving AI system where:
 
 ---
 
-## 2) Final Status - All Phases Complete
+## Phase 1: Learning Loop Backend Infrastructure (Status: In Progress)
+
+**Goal:** Build complete backend for agent creation, conversation tracking, feedback collection, and nightly learning loop.
+
+### 1.1 Environment Setup & Dependencies
+- [ ] Add OpenAI API key to `/app/backend/.env`
+- [ ] Install `apscheduler` for nightly jobs
+- [ ] Verify `openai` SDK (already installed)
+- [ ] Create initial Master Prompt document in MongoDB
+
+### 1.2 Database Models (server.py)
+- [ ] **Agent Model** (Pydantic + MongoDB):
+  - `id`, `user_id`, `description`, `generated_prompt`
+  - `master_prompt_version` (e.g., "Ω_v1.0")
+  - `score` (feedback rating average)
+  - `metadata` (JSON with tags, category)
+  - `created_at`
+  
+- [ ] **ConversationEvent Model**:
+  - `id`, `agent_id`, `user_id`
+  - `messages` (list of {role, content, timestamp})
+  - `scores` (list of numeric ratings during chat)
+  - `feedback_rating` (1-5 final rating)
+  - `created_at`
+  
+- [ ] **MasterPrompt Model**:
+  - `id`, `version` (e.g., "Ω_v1.0")
+  - `content` (full Czech prompt text)
+  - `status` ("active", "pending", "archived")
+  - `created_at`, `approved_at`, `approved_by` (admin user_id)
+  - `patterns_learned` (list of strings summarizing what was learned)
+  
+- [ ] **LearningSummary Model**:
+  - `id`, `date`, `summary_text`
+  - `patterns_extracted` (list of themes/patterns)
+  - `proposed_master_prompt_changes` (text)
+  - `approved` (boolean)
+  - `created_at`
+
+### 1.3 API Endpoints - Agent Creation
+- [ ] `POST /api/start-agent`
+- [ ] `POST /api/agent/{agent_id}/refine`
+- [ ] `POST /api/agent/{agent_id}/finalize`
+
+### 1.4 API Endpoints - Conversation & Feedback
+- [ ] `POST /api/message` (enhance for agent-specific chat)
+- [ ] `POST /api/feedback` (enhance existing)
+- [ ] `GET /api/agent/{agent_id}`
+
+### 1.5 API Endpoints - Admin & Monitoring
+- [ ] `GET /api/admin/agents`
+- [ ] `GET /api/admin/master-prompts`
+- [ ] `POST /api/admin/master-prompts/approve`
+- [ ] `GET /api/admin/learning-summaries`
+- [ ] `GET /api/admin/metrics`
+- [ ] `POST /api/admin/trigger-learning`
+
+### 1.6 OpenAI Integration Module
+- [ ] Create `openai_service.py`
+- [ ] Implement agent generation functions
+- [ ] Implement summarization functions
+- [ ] Implement embeddings & clustering
+
+### 1.7 Nightly Learning Loop (Scheduler)
+- [ ] Install APScheduler, configure timezone to CET
+- [ ] Create `learning_loop.py`
+- [ ] Schedule job: `4:20 AM CET daily`
+- [ ] Add error handling + logging
+
+### 1.8 Master Prompt Initialization
+- [ ] Create MongoDB document for `Ω_v1.0`
+- [ ] Set `status="active"`
+
+### 1.9 Testing Backend
+- [ ] Test agent creation endpoints
+- [ ] Test conversation endpoints
+- [ ] Test admin endpoints
+- [ ] Test learning loop
+- [ ] Python linting
+
+---
+
+## Phase 2: Agent Creator Frontend (Status: Not Started)
+
+**Goal:** Transform `/demo` page into Agent Creator interface with neural pathway aesthetics.
+
+### 2.1 Update Frontend Structure
+- [ ] Transform Demo.jsx to AgentCreator.jsx
+- [ ] Update routing
+- [ ] Remove old demo components
+
+### 2.2 Agent Creator Hero Section
+- [ ] Neural pathways background (tsparticles)
+- [ ] Hero title & subtitle in Czech
+- [ ] Token balance display
+
+### 2.3 Agent Description Input
+- [ ] Large textarea
+- [ ] Character counter
+- [ ] Submit button
+
+### 2.4 Clarifying Dialog Component
+- [ ] Display AI questions
+- [ ] Input fields for answers
+- [ ] Concept mapping visualization (D3.js)
+
+### 2.5 Final Agent Prompt Display
+- [ ] Markdown renderer
+- [ ] Copy-to-clipboard
+- [ ] Download button
+- [ ] Test agent button
+
+### 2.6 Testing Frontend
+- [ ] Screenshot verification
+- [ ] Full flow testing
+- [ ] Responsive design check
+
+---
+
+## Phase 3: Admin Dashboard (6 Modules) (Status: Not Started)
+
+**Goal:** Comprehensive admin interface for monitoring system evolution.
+
+### 3.1 Admin Dashboard Layout
+- [ ] Create `/admin/dashboard` route
+- [ ] Sidebar navigation
+- [ ] Top bar with live metrics
+
+### 3.2 Module 1: Agent Monitor
+- [ ] Table with sortable columns
+- [ ] Search/filter functionality
+
+### 3.3 Module 2: Feedback Visualizer
+- [ ] Sentiment heatmap (D3.js)
+- [ ] Satisfaction trend chart (Recharts)
+- [ ] Cluster map
+- [ ] Keyword cloud
+
+### 3.4 Module 3: Learning Loop Console
+- [ ] Master Prompt proposals list
+- [ ] Diff viewer
+- [ ] Approve/Reject/Deploy buttons
+
+### 3.5 Module 4: Live Expo Monitor
+- [ ] Active users counter
+- [ ] Agents created counter
+- [ ] Token consumption graph
+- [ ] Word cloud
+
+### 3.6 Module 5: Version Ledger
+- [ ] Changelog table
+- [ ] Daily report generator
+
+### 3.7 Module 6: Meta-Insight Panel
+- [ ] AI-generated daily reflection
+- [ ] Refresh button
+
+### 3.8 Testing Admin Dashboard
+- [ ] Screenshot verification all modules
+- [ ] Test approve/reject flow
+- [ ] Test visualizations
+
+---
+
+## Phase 4: Polish & Deployment (Status: Not Started)
+
+### 4.1 Final Testing
+- [ ] End-to-end testing
+- [ ] Load testing
+- [ ] Security review
+
+### 4.2 Documentation
+- [ ] API documentation
+- [ ] Admin user guide
+- [ ] System architecture diagram
+
+### 4.3 Deployment Preparation
+- [ ] Environment variables check
+- [ ] Database indexes
+- [ ] Logging configuration
+
+---
+
+## Technical Specifications
+
+### OpenAI API Usage
+- **Agent Generation:** GPT-4 (~1500-3000 tokens per agent)
+- **Summarization:** GPT-4 (~500-1000 tokens per summary)
+- **Embeddings:** text-embedding-3-small
+- **Estimated Daily Cost:** $5-20 depending on expo traffic
+
+### Master Prompt Versioning Logic
+```
+Ω_v1.0 → Initial (user-provided Czech prompt)
+Ω_v1.1 → First nightly update
+Ω_v1.2 → Second nightly update
+```
+
+### Database Collections
+- `agents` (~1000-5000 docs during expo)
+- `conversation_events` (~5000-20000 docs)
+- `master_prompts` (~10-30 versions)
+- `learning_summaries` (~1 per day)
+- `feedbacks` (~500-2000 docs)
+
+### Scheduler Configuration
+```python
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
+
+scheduler = AsyncIOScheduler()
+cet_tz = pytz.timezone('Europe/Prague')
+
+scheduler.add_job(
+    run_learning_loop,
+    CronTrigger(hour=4, minute=20, timezone=cet_tz),
+    id='nightly_learning_loop'
+)
+scheduler.start()
+```
+
+---
+
+## Risk Mitigation
+
+- **OpenAI API Failures:** Retry logic with exponential backoff
+- **High Token Costs:** Daily token limits per user
+- **Poor Prompt Evolution:** Admin approval required
+- **Nightly Job Failures:** Error logging + manual trigger option
+
+---
+
+## Success Metrics
+
+- Agent Creation Success Rate: >90%
+- User Satisfaction: Average rating >4.0/5.0
+- Master Prompt Evolution: At least 5 versions by end of expo
+- System Uptime: >99% during conference
+- Token Efficiency: <5000 tokens per agent
+
+---
+
+## Notes
+
+- Keep existing Education section (`/education`) unchanged
+- Preserve Ω-Aurora design system
+- All Czech content must render diacritics correctly
+- Admin dashboard requires `is_admin: true`
+- Master Prompt Ω_v1.0 stored in MongoDB
 
 ### ✅ Phase 0 – Education & Design System (100% COMPLETE)
 
