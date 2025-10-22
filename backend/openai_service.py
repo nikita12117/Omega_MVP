@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 
 # Constants
-DEFAULT_MODEL = "gpt-4-turbo-preview"
+DEFAULT_MODEL = "gpt-4o"  # Using GPT-4o which is available
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 
