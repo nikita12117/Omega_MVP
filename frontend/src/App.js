@@ -46,14 +46,7 @@ function App() {
             <Route path="/demo/activate/:token" element={<DemoActivate />} />
             <Route path="/login" element={<Login />} />
             <Route path="/privacy" element={<Privacy />} />
-            <Route 
-              path="/demo" 
-              element={
-                <ProtectedRoute>
-                  <Demo />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/demo" element={<Demo />} />
             <Route 
               path="/tokens" 
               element={
