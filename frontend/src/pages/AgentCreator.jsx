@@ -523,9 +523,13 @@ const AgentCreator = () => {
                     <CheckCircle className="h-6 w-6 text-[#06d6a0]" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold">Váš Omega Agent je připraven!</h2>
+                    <h2 className="text-2xl font-semibold">
+                      {isV9Transformed ? 'Ω-Agent v-9 Protocol Ready!' : 'Váš Omega Agent je připraven!'}
+                    </h2>
                     <p className="text-[#9fb4d0] mt-1">
-                      Použito {tokensUsed} tokenů
+                      {isV9Transformed 
+                        ? 'Fractal Recursion & Self-Validation aktivní' 
+                        : `Použito ${tokensUsed} tokenů`}
                     </p>
                   </div>
                 </div>
@@ -554,19 +558,53 @@ const AgentCreator = () => {
 
               <Separator className="mb-6 bg-[#25365a]/50" />
 
+              {/* v-9 Protocol Badge */}
+              {isV9Transformed && (
+                <div className="mb-4 p-3 rounded-lg bg-[#06d6a0]/10 border border-[#06d6a0]/30">
+                  <div className="flex items-center gap-2 text-[#06d6a0] text-sm font-medium">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Ω-Textual Cognition Core v-9 Activated</span>
+                  </div>
+                  <p className="text-xs text-[#9fb4d0] mt-1">
+                    Fractal recursion • Self-validation • 4-layer cognitive architecture • Coherence ≥ 0.999
+                  </p>
+                </div>
+              )}
+
               <ScrollArea className="h-[600px] rounded-lg border border-[#25365a] bg-[#0f1b33] p-6">
                 <div className="prose prose-invert prose-sm max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {finalPrompt}
+                    {isV9Transformed ? v9Prompt : finalPrompt}
                   </ReactMarkdown>
                 </div>
               </ScrollArea>
 
               <div className="mt-6 flex gap-3">
+                {!isV9Transformed && (
+                  <Button
+                    data-testid="v9-transform-btn"
+                    onClick={handleV9Transform}
+                    disabled={isTransformingV9}
+                    className="flex-1 bg-gradient-to-r from-[#1e3a8a] to-[#06d6a0] hover:from-[#2a4aa0] hover:to-[#07f0b8] text-white font-semibold h-12"
+                  >
+                    {isTransformingV9 ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Transformuji na v-9 protokol...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="mr-2 h-4 w-4" />
+                        Transformovat na v-9 Protocol
+                      </>
+                    )}
+                  </Button>
+                )}
+                
                 <Button
                   data-testid="create-new-agent-btn"
                   onClick={handleReset}
-                  className="flex-1 bg-[#1e3a8a] hover:bg-[#2a4aa0] text-white font-semibold h-12"
+                  className={`${isV9Transformed ? 'flex-1' : 'flex-1'} bg-[#1e3a8a] hover:bg-[#2a4aa0] text-white font-semibold h-12`}
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
                   Vytvořit dalšího agenta
