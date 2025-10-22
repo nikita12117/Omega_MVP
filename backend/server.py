@@ -3257,6 +3257,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize APScheduler for nightly learning loop
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
+from learning_loop import run_learning_loop_sync
+
+scheduler = AsyncIOScheduler()
+cet_tz = pytz.timezone('Europe/Prague')
+
+# Schedule nightly learning loop at 4:20 AM CET
+scheduler.add_job(
+    run_learning_loop_sync,
+    CronTrigger(hour=4, minute=20, timezone=cet_tz),
+    id='nightly_learning_loop',
+    name='Ω-KOMPRESNÍ ROVNICE Learning Loop',
+    replace_existing=True
+)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Master Prompt and start scheduler on startup."""
+    logger.info("🚀 Starting Ω-KOMPRESNÍ ROVNICE backend...")
+    
+    # Initialize Ω_v1.0 if not exists
+    await initialize_master_prompt()
+    
+    # Start the scheduler
+    scheduler.start()
+    logger.info("⏰ Learning loop scheduler started (4:20 AM CET daily)")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown()
     client.close()
