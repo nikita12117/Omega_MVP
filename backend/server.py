@@ -3051,6 +3051,76 @@ async def get_agent(agent_id: str, http_request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/agent/{agent_id}/v9-transform")
+async def transform_agent_to_v9(agent_id: str, http_request: Request):
+    """
+    Transform agent prompt to v-9 protocol (Ω-Textual Cognition Compression Protocol).
+    Applies fractal recursion, self-validation, and layered cognitive architecture.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Get agent document
+        agent_doc = await db.agents.find_one({"id": agent_id, "user_id": user["id"]})
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Check if already has v9 prompt
+        if agent_doc.get("metadata", {}).get("v9_prompt"):
+            return {
+                "agent_prompt_markdown": agent_doc["metadata"]["v9_prompt"],
+                "tokens_used": 0,
+                "already_transformed": True
+            }
+        
+        # Transform to v-9
+        v9_prompt, tokens_used = await transform_to_v9_protocol(
+            agent_doc["generated_prompt"],
+            agent_doc["description"]
+        )
+        
+        # Update agent with v9 prompt
+        await db.agents.update_one(
+            {"id": agent_id},
+            {"$set": {
+                "metadata.v9_prompt": v9_prompt,
+                "metadata.v9_transformed_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        # Deduct tokens from user balance
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"omega_tokens_balance": -tokens_used}}
+        )
+        
+        # Log token transaction
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "amount": -tokens_used,
+            "balance_after": user.get("omega_tokens_balance", 0) - tokens_used,
+            "transaction_type": "usage",
+            "description": f"v-9 transformation: {agent_id}",
+            "openai_tokens_used": tokens_used,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.token_transactions.insert_one(transaction)
+        
+        logger.info(f"Transformed agent to v-9: {agent_id}, tokens: {tokens_used}")
+        
+        return {
+            "agent_prompt_markdown": v9_prompt,
+            "tokens_used": tokens_used,
+            "agent_id": agent_id,
+            "already_transformed": False
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in v-9 transformation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Admin Monitoring Endpoints
 
 @api_router.get("/admin/agents")
