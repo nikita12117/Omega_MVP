@@ -49,10 +49,10 @@
   },
   {
     "content": "Run Python linting on server.py to check for errors",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Test demo activation flow with curl",
-    "status": "pending"
+    "status": "completed"
   }
 ]
