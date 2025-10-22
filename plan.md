@@ -1,69 +1,78 @@
-# Ω-Aurora Codex – QR Demo Accounts Transformation Plan (Updated)
+# Ω-Aurora Codex – QR Demo Accounts Transformation Plan
 
-## 1) Executive Summary
-We will pivot from OAuth-first access to a frictionless QR → special link → instant demo account flow while preserving all admin and compliance capabilities. Scanning a conference QR opens a special activation URL that provisions an anonymous demo account (UUID), grants 100,000 tokens, and unlocks the generator for 72 hours. Education remains public. After successful feedback submission, demo users are offered Google OAuth upgrade to convert to full accounts with future update notifications. Phone verification stays server-side but is hidden from demo users' UI. Referral is adapted to work with demo activations. Admin gains tools to generate/track QR activation tokens and manage demo users.
-
-## 2) Objectives
-- Zero-friction conference onboarding: Scan → Activate → Generate Omega prompt
-- Preserve current admin dashboard and analytics; add QR token generation
-- Keep GDPR/Privacy features intact (export/delete/audit)
-- Hide phone verification for demo users; keep enforcement for non-demo users
-- Adapt referral to demo accounts (optional ref capture on activation)
-- **Offer Google OAuth upgrade after successful feedback submission** (not email opt-in)
-- Follow Ω-Aurora design guidelines (cosmic/aurora theme) with testable, accessible UI
-
-## 3) UI/UX Design Guidelines (aligned with design_guidelines.md)
-- Palette (per guidelines):
-  - background: #0a0f1d (cosmic night)
-  - primary: #1e3a8a (deep blue)
-  - accent: #06d6a0 (quantum teal)
-  - foreground: #e6f1ff; borders: #25365a; surfaces: #10172a / #0f1b33
-  - Gradients: aurora_horizon/teal_breeze/polar_mist with coverage <20% viewport, never on reading blocks
-- Typography: Inter (UI, headings), JetBrains Mono (code/prompt). Education pages set lang=cs
-- Components: Use shadcn/ui from /frontend/src/components/ui only (Button, Tabs, Card, ScrollArea, Sonner, Dialog, Table, etc.)
-- Navigation: Ω logo left; nav items: Education | Demo | Dashboard; keys/profile on right
-- Accessibility: WCAG AA contrast, visible focus rings, keyboard navigation
-- Testing: data-testid on all interactive/critical elements (e.g., demo-send-button)
-- Motion: framer-motion micro-interactions; animate opacity/transform only; respect prefers-reduced-motion
-- Data states: Explicit loading (skeleton), empty, and error states for chat, education loader, and admin tables
-
-## 4) Implementation Phases
-
-### Phase 0 – Foundations & Content (Status: Not Started)
-**Goal:** Apply Ω-Aurora design system and create public education section
-
-**Tasks:**
-- [ ] Apply design tokens from design_guidelines.md to global CSS/Tailwind config
-- [ ] Create OmegaLogo component (SVG with neural pathways, teal accent)
-- [ ] Build EducationSelector component with Czech content from educationTexts.js
-  - 3 documents: Ω⁻⁹ (Primordial), Ω⁻⁴ (Matrices), Ω∞ (Framework)
-  - 3 perspectives per doc: Child, Adult Non-Tech, Adult Tech
-  - Two-pane layout: left tabs/pills, right reading pane (max-w-prose)
-- [ ] Create /education route (public, no auth required)
-- [ ] Set lang="cs" on education page for Czech content
-- [ ] Add noise texture overlay and subtle aurora gradient to hero section (<20% viewport)
-
-**Components Used:** Tabs, Card, ScrollArea, Badge, Separator, Button
+**Version:** 2.1  
+**Last Updated:** 2025-01-22  
+**Status:** Phase 0 Complete | Phase 1 In Progress
 
 ---
 
-### Phase 1 – Backend: QR Demo Accounts (Status: Not Started)
-**Goal:** Implement QR activation system with 72h demo accounts
+## 1) Executive Summary
+
+We are transforming the Ω-Aurora Codex from OAuth-first access to a **QR → instant demo account** flow for frictionless conference onboarding. Scanning a QR code opens a special activation URL that provisions an anonymous demo account (UUID-based), grants 100,000 tokens, and unlocks the Omega prompt generator for 72 hours.
+
+**Key Features:**
+- **Education section**: Public access (no authentication) with Czech philosophical content
+- **Demo accounts**: 72h expiry, 100k tokens, instant activation via QR
+- **Upgrade path**: After successful feedback, demo users can upgrade to full Google OAuth accounts
+- **Admin tools**: QR token generation, user management, analytics
+- **Compliance**: Full GDPR support (export/delete/audit)
+- **Hidden features**: Phone verification kept server-side but hidden from demo UI
+
+---
+
+## 2) Current Status
+
+### ✅ Phase 0 – Foundations & Content (COMPLETED)
+
+**Completed Tasks:**
+- ✅ Applied Ω-Aurora design tokens to global CSS and Tailwind config
+  - Cosmic night background (#0a0f1d), quantum teal accent (#06d6a0), deep blue primary (#1e3a8a)
+  - Inter typography, JetBrains Mono for code
+  - Aurora gradient overlays (<20% viewport coverage)
+  - Noise texture for depth
+- ✅ Created OmegaLogo component (SVG with neural pathways, teal gradient)
+- ✅ Built EducationSelector component with Czech content
+  - 3 documents: Ω⁻⁹ (Primordial), Ω⁻⁴ (Matrices), Ω∞ (Framework)
+  - 3 perspectives per document: Child, Adult Non-Tech, Adult Tech
+  - Two-pane layout: left sidebar (tabs + pills), right reader (max-w-prose)
+- ✅ Created public /education route (accessible without authentication)
+- ✅ Set lang="cs" on education page for Czech language accessibility
+- ✅ Added noise texture and aurora gradient to hero section
+- ✅ Updated Navigation component with Ω logo and Education/Demo/Dashboard links
+- ✅ Verified frontend builds successfully without errors
+
+**Deliverables:**
+- `/education` page fully functional at https://quantum-codex-1.preview.emergentagent.com/education
+- Design system implemented per design_guidelines.md
+- All shadcn/ui components integrated
+- Framer-motion animations with reduced-motion support
+
+**Screenshot Evidence:**
+- Education page renders correctly with Czech text
+- Ω logo displays with neural pathway motifs
+- Navigation bar functional with proper theming
+- Aurora gradient visible in hero section (within 20% viewport limit)
+
+---
+
+### 🚧 Phase 1 – Backend: QR Demo Accounts (IN PROGRESS)
+
+**Goal:** Implement QR activation system with 72h demo accounts and feedback collection
 
 **Data Models (MongoDB, UUID IDs):**
 
 ```python
-# users collection
+# users collection (updates to existing)
 {
   "id": "uuid",
   "email": "string | null",
-  "name": "string | null", 
-  "is_demo": "boolean",
-  "demo_expires_at": "datetime | null",  # UTC, 72h from activation
+  "name": "string | null",
+  "is_demo": "boolean",  # NEW: identifies demo accounts
+  "demo_expires_at": "datetime | null",  # NEW: UTC, 72h from activation
   "is_admin": "boolean",
   "is_banned": "boolean",
   "phone_number": "string | null",
-  "phone_verified": "boolean",
+  "phone_verified": "boolean",  # Hidden from demo UI
   "referral_code": "string",
   "referred_by": "string | null",
   "omega_tokens_balance": "int",  # 100000 for demo accounts
@@ -71,10 +80,10 @@ We will pivot from OAuth-first access to a frictionless QR → special link → 
   "google_id": "string | null"  # For OAuth upgrade
 }
 
-# demo_activation_tokens collection
+# demo_activation_tokens collection (NEW)
 {
   "id": "uuid",
-  "token": "string",  # Short unique code (8-12 chars)
+  "token": "string",  # Short unique code (8-12 chars, e.g., "OMEGA-2025-ABC")
   "label": "string",  # Admin label (e.g., "Prague Conference 2025")
   "created_by": "uuid",  # Admin user ID
   "max_activations": "int | null",  # null = unlimited
@@ -84,11 +93,11 @@ We will pivot from OAuth-first access to a frictionless QR → special link → 
   "notes": "string | null"
 }
 
-# feedback collection (new)
+# feedback collection (NEW)
 {
   "id": "uuid",
   "user_id": "uuid",
-  "rating": "int",  # 1-5
+  "rating": "int",  # 1-5 stars
   "comment": "string",
   "keywords": "array[string]",
   "created_at": "datetime"
@@ -98,28 +107,29 @@ We will pivot from OAuth-first access to a frictionless QR → special link → 
 **API Endpoints (FastAPI, all /api prefix):**
 
 **Tasks:**
-- [ ] POST /api/demo/activate
+- [ ] **POST /api/demo/activate**
   - Body: `{ token: string, ref?: string }`
   - Validates token exists and status=active
   - Checks max_activations if set
   - Creates user: `{ is_demo: true, tokens_balance: 100000, demo_expires_at: now+72h }`
   - If ref provided: sets user.referred_by (referral tracking)
   - Increments token.activations_count
-  - Issues JWT with claims: `{ sub, is_demo, demo_expires_at }`
+  - Issues JWT with claims: `{ sub, is_demo, demo_expires_at, exp }`
   - Returns: `{ user, jwt }`
-  - Logs in audit_logs
+  - Logs activation in audit_logs with IP address
 
-- [ ] GET /api/auth/me (update existing)
+- [ ] **GET /api/auth/me** (update existing)
   - Add fields: is_demo, demo_expires_at, tokens_balance
-  - Returns full user object
+  - Returns full user object with demo status
 
-- [ ] POST /api/feedback (new)
+- [ ] **POST /api/feedback** (new)
   - Body: `{ rating: int, comment: string, keywords: string[] }`
   - Requires auth (demo or full account)
-  - Stores feedback with user_id
+  - Stores feedback with user_id and timestamp
   - Returns: `{ success: true }`
+  - Triggers upgrade offer in frontend
 
-- [ ] POST /api/auth/google/upgrade (new)
+- [ ] **POST /api/auth/google/upgrade** (new)
   - For demo users who want to upgrade after feedback
   - Body: `{ session_id }` from Emergent Auth
   - Links Google account to existing demo user
@@ -127,392 +137,490 @@ We will pivot from OAuth-first access to a frictionless QR → special link → 
   - Preserves tokens_balance and generated prompts history
   - Returns updated user + new JWT
 
-- [ ] Middleware: Demo expiry guard
-  - On /api/generate/* endpoints: if is_demo && now > demo_expires_at → 401 "demo_expired"
-  - On /api/generate/* endpoints: if !is_demo && !phone_verified && !is_admin → 403 "phone_verification_required"
+- [ ] **Middleware: Demo expiry guard**
+  - On /api/generate/* endpoints:
+    - If is_demo && now > demo_expires_at → 401 "demo_expired"
+    - If !is_demo && !phone_verified && !is_admin → 403 "phone_verification_required"
+  - On all authenticated endpoints: check JWT expiry and demo expiry
 
-- [ ] Admin QR Token Management:
+- [ ] **Admin QR Token Management:**
   - POST /api/admin/qr-tokens: `{ label, max_activations?, notes }` → generates token
-  - GET /api/admin/qr-tokens: lists all tokens with stats
+  - GET /api/admin/qr-tokens: lists all tokens with stats (activations_count, status)
   - PUT /api/admin/qr-tokens/{id}: `{ status }` → disable/enable token
   - GET /api/admin/qr-tokens/{id}/export: returns QR code PNG + activation link
 
 **Security:**
 - Rate limiting: 10 activations per IP per hour on /api/demo/activate
-- JWT stored in localStorage, sent via Authorization header
-- All datetimes use timezone.utc
+- JWT stored in localStorage, sent via Authorization header (Safari-compatible)
+- All datetimes use timezone.utc (Python: datetime.now(timezone.utc))
+- UUID generation: uuid.uuid4() → str()
 
 ---
 
-### Phase 2 – Frontend: Activation & Demo Flow (Status: Not Started)
-**Goal:** Implement QR activation flow and demo chat interface
+### 📋 Phase 2 – Frontend: Activation & Demo Flow (NOT STARTED)
+
+**Goal:** Implement QR activation flow and demo chat interface with feedback collection
 
 **Routes:**
-- [ ] /demo/activate/:token (new)
-  - Extracts token from URL
-  - Checks for ?ref=CODE query param
-  - Calls POST /api/demo/activate
-  - Stores JWT in localStorage
-  - Redirects to /demo
-  - Shows loading state during activation
-  - Error handling: invalid token, expired token, max activations reached
 
-- [ ] /demo (update existing)
-  - **Gating logic:**
-    - Not authenticated → Show "Scan QR to activate" panel with demo benefits
-    - Authenticated demo + not expired → Show ChatInterface (unlocked)
-    - Authenticated demo + expired → Show expiration panel with Google OAuth upgrade CTA
-    - Authenticated full account + no phone verification → Generator locked, show phone verify prompt
-    - Authenticated admin → Generator unlocked (bypass all checks)
+**1. /demo/activate/:token (NEW)**
+- [ ] Extract token from URL params
+- [ ] Check for ?ref=CODE query param (referral tracking)
+- [ ] Call POST /api/demo/activate with token and ref
+- [ ] Store JWT in localStorage
+- [ ] Redirect to /demo on success
+- [ ] Show loading state during activation (skeleton + spinner)
+- [ ] Error handling:
+  - Invalid token → "This activation link is invalid"
+  - Expired token → "This activation link has expired"
+  - Max activations reached → "This activation link has been fully used"
+  - Network error → "Connection failed. Please try again."
+
+**2. /demo (UPDATE EXISTING)**
+
+**Gating Logic:**
+```javascript
+if (!authenticated) {
+  // Show: "Scan QR to Activate" panel with demo benefits
+  return <DemoActivationPrompt />;
+}
+
+if (user.is_demo && now < user.demo_expires_at) {
+  // Show: ChatInterface (generator unlocked)
+  return <ChatInterface />;
+}
+
+if (user.is_demo && now >= user.demo_expires_at) {
+  // Show: Expiration panel with Google OAuth upgrade CTA
+  return <DemoExpiredPanel />;
+}
+
+if (!user.is_demo && !user.phone_verified && !user.is_admin) {
+  // Show: Generator locked, phone verification prompt
+  return <PhoneVerificationPrompt />;
+}
+
+if (user.is_admin) {
+  // Show: ChatInterface (generator unlocked, bypass all checks)
+  return <ChatInterface />;
+}
+```
 
 **ChatInterface Component:**
-- [ ] Presets selector: Customer Support, Lead Qualification, Content Planning, Market Research
-- [ ] 3-stage generation flow:
-  1. Clarifying Questions (user answers)
-  2. Optimization Suggestions (user refines)
-  3. Final Omega Prompt (Markdown output)
-- [ ] Actions: Generate Agent button, Copy Markdown, Clear conversation
-- [ ] Message bubbles: user (right, surface-2), assistant (left, transparent border)
-- [ ] Markdown rendering with syntax highlighting (JetBrains Mono for code blocks)
-- [ ] Token balance display in header
-- [ ] After successful generation → Show feedback dialog
+- [ ] **Presets selector**: Customer Support, Lead Qualification, Content Planning, Market Research
+- [ ] **3-stage generation flow**:
+  1. **Clarifying Questions** (AI asks user about their needs)
+  2. **Optimization Suggestions** (AI refines understanding)
+  3. **Final Omega Prompt** (Markdown output, copy-paste ready)
+- [ ] **Actions**:
+  - Generate Agent button (primary CTA)
+  - Copy Markdown button (copies final prompt to clipboard)
+  - Clear conversation button (resets chat)
+- [ ] **Message bubbles**:
+  - User messages: right-aligned, bg-surface-2, rounded-br-sm
+  - Assistant messages: left-aligned, transparent with border, rounded-bl-sm
+- [ ] **Markdown rendering**: react-markdown with remark-gfm
+- [ ] **Code blocks**: JetBrains Mono font, syntax highlighting
+- [ ] **Token balance display**: Header shows remaining tokens with countdown
+- [ ] **After successful generation** → Show feedback dialog
 
 **Feedback Dialog:**
-- [ ] 5-star rating component
-- [ ] Comment textarea
-- [ ] Keywords multi-select or input
-- [ ] Submit → POST /api/feedback
-- [ ] On success → Show Google OAuth upgrade dialog
+- [ ] **5-star rating component** (lucide-react Star icons)
+- [ ] **Comment textarea** (optional, placeholder: "What did you think of the Omega prompt?")
+- [ ] **Keywords input** (multi-select or comma-separated tags)
+- [ ] **Submit button** → POST /api/feedback
+- [ ] **On success** → Close feedback dialog, show Google OAuth upgrade dialog
 
 **Google OAuth Upgrade Dialog:**
-- [ ] Headline: "Save Your Progress & Get Updates"
-- [ ] Benefits: Keep prompts, future updates, no expiry
-- [ ] "Upgrade with Google" button → Emergent Auth flow
-- [ ] "Maybe Later" option (dismissible)
-- [ ] After upgrade: redirect to /demo with success toast
+- [ ] **Headline**: "Save Your Progress & Get Updates"
+- [ ] **Benefits list**:
+  - ✓ Keep all your generated prompts
+  - ✓ Receive future updates and improvements
+  - ✓ No 72-hour expiry
+  - ✓ Priority support
+- [ ] **"Upgrade with Google" button** → Redirects to Emergent Auth flow
+- [ ] **"Maybe Later" button** (dismissible, can be shown again)
+- [ ] **After upgrade**: Redirect to /demo with success toast: "Account upgraded successfully!"
 
-**Components Used:** Card, Textarea, Button, Tabs, Dialog, Badge, ScrollArea, Sonner (toasts)
+**Components Used:**
+- Card, Textarea, Button, Tabs, Dialog, Badge, ScrollArea, Sonner (toasts)
+- Lucide-react icons: Sparkles, Copy, Trash2, Star
 
-**Data-testid requirements:**
-- demo-activate-loading
-- demo-chat-interface
-- demo-preset-{preset-name}
-- demo-send-button
-- demo-message-{index}
-- demo-copy-markdown-button
-- demo-feedback-dialog
-- demo-rating-{1-5}
-- demo-upgrade-dialog
-- demo-upgrade-google-button
+**Data-testid Requirements:**
+- `demo-activate-loading`
+- `demo-chat-interface`
+- `demo-preset-customer-support`, `demo-preset-lead-qualification`, etc.
+- `demo-send-button`
+- `demo-message-0`, `demo-message-1`, etc.
+- `demo-copy-markdown-button`
+- `demo-feedback-dialog`
+- `demo-rating-1`, `demo-rating-2`, ..., `demo-rating-5`
+- `demo-upgrade-dialog`
+- `demo-upgrade-google-button`
 
 ---
 
-### Phase 3 – Admin: QR Token Generation (Status: Not Started)
+### 🔧 Phase 3 – Admin: QR Token Generation (NOT STARTED)
+
 **Goal:** Add QR token management to admin dashboard
 
 **Admin Dashboard Updates:**
-- [ ] Add "QR Tokens" tab to admin navigation
-- [ ] QR Tokens page layout:
-  - Header: "Generate Token" button + batch generate option
-  - Table: token, label, activations_count/max_activations, status, created_at, actions
-  - Actions per row: Copy link, Export QR (PNG), Disable/Enable, View stats
 
-**Generate Token Dialog:**
-- [ ] Fields:
-  - Label (required): "Prague Conference 2025"
-  - Max Activations (optional): number input or "Unlimited"
-  - Notes (optional): textarea
-- [ ] Generate button → POST /api/admin/qr-tokens
-- [ ] Shows generated token and activation link
-- [ ] Download QR code button (calls /api/admin/qr-tokens/{id}/export)
+**1. QR Tokens Tab (NEW)**
+- [ ] Add "QR Tokens" tab to admin navigation (between Users and Settings)
+- [ ] Page layout:
+  - **Header**: "Generate Token" button + "Batch Generate" button
+  - **Table**: token, label, activations_count/max_activations, status, created_at, actions
+  - **Actions per row**: Copy Link, Export QR (PNG), Disable/Enable, View Stats
 
-**Batch Generate:**
-- [ ] Input: number of tokens (1-100)
-- [ ] Generates N tokens with auto-labels "Batch {timestamp} - {n}"
-- [ ] Downloads CSV with all activation links
+**2. Generate Token Dialog:**
+- [ ] **Fields**:
+  - Label (required): Text input, e.g., "Prague Conference 2025"
+  - Max Activations (optional): Number input or "Unlimited" checkbox
+  - Notes (optional): Textarea for internal notes
+- [ ] **Generate button** → POST /api/admin/qr-tokens
+- [ ] **Success state**: Shows generated token and activation link
+- [ ] **Download QR code button** → Calls /api/admin/qr-tokens/{id}/export
+- [ ] **Copy link button** → Copies activation URL to clipboard with toast confirmation
 
-**Users Management Updates:**
-- [ ] Add columns: is_demo badge, demo_expires_at, tokens_balance
-- [ ] Filter: All | Demo | Full Accounts | Expired Demos
-- [ ] Actions: existing ban/unban + adjust tokens
+**3. Batch Generate Dialog:**
+- [ ] **Input**: Number of tokens (1-100)
+- [ ] **Auto-labeling**: "Batch {timestamp} - {n}"
+- [ ] **Generate button** → Creates N tokens via API
+- [ ] **Downloads CSV** with columns: token, activation_link, label, created_at
 
-**Settings Updates:**
-- [ ] Referral section: Enable referral rewards for demo activations (toggle)
-- [ ] Demo defaults: 72h expiry, 100k tokens (display only, not editable for now)
+**4. Users Management Updates:**
+- [ ] **Add columns**:
+  - is_demo badge (teal badge with "Demo" text)
+  - demo_expires_at (formatted as "Expires in X hours" or "Expired")
+  - tokens_balance (formatted with commas, e.g., "100,000")
+- [ ] **Filter dropdown**: All | Demo Accounts | Full Accounts | Expired Demos
+- [ ] **Actions**: Existing ban/unban + new "Adjust Tokens" action
 
-**Components Used:** Table, Dialog, Input, Button, Badge, Switch, Tabs, AlertDialog
+**5. Settings Updates:**
+- [ ] **Referral section**:
+  - Toggle: "Enable referral rewards for demo activations"
+  - Input: Token reward amount (default: 10,000)
+- [ ] **Demo defaults section** (display only):
+  - Expiry: 72 hours
+  - Initial tokens: 100,000
+  - (Note: "Contact support to change these values")
 
-**Data-testid requirements:**
-- admin-qr-tokens-tab
-- admin-generate-token-button
-- admin-token-row-{id}
-- admin-export-qr-{id}
-- admin-disable-token-{id}
+**Components Used:**
+- Table, Dialog, Input, Button, Badge, Switch, Tabs, AlertDialog, Sonner
+
+**Data-testid Requirements:**
+- `admin-qr-tokens-tab`
+- `admin-generate-token-button`
+- `admin-batch-generate-button`
+- `admin-token-row-{id}`
+- `admin-copy-link-{id}`
+- `admin-export-qr-{id}`
+- `admin-disable-token-{id}`
+- `admin-users-filter-demo`
 
 ---
 
-### Phase 4 – Security, Policies, Compliance (Status: Not Started)
+### 🔒 Phase 4 – Security, Policies, Compliance (NOT STARTED)
+
 **Goal:** Ensure security, GDPR compliance, and production readiness
 
 **Tasks:**
-- [ ] JWT claims structure: `{ sub: user_id, is_demo, is_admin, demo_expires_at, exp }`
-- [ ] Axios interceptor: auto-attach Authorization header from localStorage
-- [ ] 401 handler: clear JWT, redirect to /demo with "Session expired" message
-- [ ] Rate limiting:
-  - /api/demo/activate: 10 per IP per hour
-  - /api/generate: 20 per user per hour (demo), 100 per user per hour (full account)
-- [ ] GDPR endpoints (keep existing):
-  - GET /api/gdpr/export: include demo status, feedback, generated prompts
-  - DELETE /api/gdpr/delete: soft-delete user, anonymize feedback
-- [ ] Audit logging:
-  - Log demo activations with IP, token used, ref code
-  - Log generator usage with prompt name, tokens consumed
-  - Log admin QR token generation and disabling
-- [ ] CORS: ensure REACT_APP_BACKEND_URL whitelisted
-- [ ] Environment variables check:
-  - MONGO_URL, JWT_SECRET, EMERGENT_LLM_KEY
-  - EMERGENT_AUTH_API_URL, FRONTEND_URL
-  - No hardcoded values in code
+
+**1. JWT & Authentication:**
+- [ ] JWT claims structure: `{ sub: user_id, is_demo: bool, is_admin: bool, demo_expires_at: str, exp: int }`
+- [ ] Axios interceptor: Auto-attach Authorization header from localStorage
+- [ ] 401 handler: Clear JWT, redirect to /demo with "Session expired" message
+- [ ] Token refresh: Implement refresh token flow (optional, for full accounts)
+
+**2. Rate Limiting:**
+- [ ] /api/demo/activate: 10 activations per IP per hour
+- [ ] /api/generate/*: 20 requests per user per hour (demo), 100 per hour (full account)
+- [ ] /api/feedback: 5 submissions per user per day
+- [ ] Use Redis or in-memory store for rate limit tracking
+
+**3. GDPR Compliance:**
+- [ ] **GET /api/gdpr/export**: Include demo status, feedback, generated prompts, activation history
+- [ ] **DELETE /api/gdpr/delete**: Soft-delete user, anonymize feedback (keep rating, remove comment/keywords)
+- [ ] **Audit logs**: Log all demo activations with IP, user agent, token used, ref code
+- [ ] **Data retention**: Auto-delete expired demo accounts after 30 days (background job)
+
+**4. Environment Variables Check:**
+- [ ] MONGO_URL: MongoDB connection string
+- [ ] JWT_SECRET: Strong random secret (32+ chars)
+- [ ] EMERGENT_LLM_KEY: For AI generation
+- [ ] EMERGENT_AUTH_API_URL: For Google OAuth
+- [ ] FRONTEND_URL: For CORS and redirect URLs
+- [ ] No hardcoded values in code (verify with grep)
+
+**5. CORS Configuration:**
+- [ ] Ensure REACT_APP_BACKEND_URL whitelisted
+- [ ] Allow credentials: true
+- [ ] Specific origins (no wildcard in production)
+
+**6. Logging & Monitoring:**
+- [ ] Log demo activations: IP, token, ref, timestamp
+- [ ] Log generator usage: user_id, prompt_name, tokens_consumed
+- [ ] Log admin actions: QR token generation, user bans, token adjustments
+- [ ] Set up alerts for unusual activity (e.g., >100 activations/hour)
 
 ---
 
-### Phase 5 – Testing & QA (Status: Not Started)
+### 🧪 Phase 5 – Testing & QA (NOT STARTED)
+
 **Goal:** Comprehensive testing before deployment
 
 **Backend Tests:**
-- [ ] Demo activation: valid token, invalid token, expired token, max activations reached
-- [ ] Demo expiry: 72h calculation, timezone-aware UTC
-- [ ] Generator guards: demo expired, non-demo without phone, admin bypass
-- [ ] Referral tracking: ?ref=CODE on activation
-- [ ] Feedback submission and storage
-- [ ] Google OAuth upgrade: demo → full account conversion
+- [ ] **Demo activation**:
+  - Valid token → Success (user created, JWT issued)
+  - Invalid token → 404 error
+  - Expired token (status=expired) → 400 error
+  - Max activations reached → 400 error
+  - Referral code tracking (?ref=CODE)
+- [ ] **Demo expiry**:
+  - 72h calculation correct (timezone-aware UTC)
+  - Generator blocked after expiry
+  - Expiry check on every /api/generate/* request
+- [ ] **Generator guards**:
+  - Demo expired → 401 "demo_expired"
+  - Non-demo without phone → 403 "phone_verification_required"
+  - Admin bypass → Always allowed
+- [ ] **Feedback submission**: Stored correctly with user_id
+- [ ] **Google OAuth upgrade**: Demo → full account conversion, data preserved
 
 **Frontend Tests:**
-- [ ] /demo/activate/:token flow with loading/error states
-- [ ] ChatInterface: 3-stage generation, markdown rendering, copy button
-- [ ] Feedback dialog → Google OAuth upgrade dialog flow
-- [ ] Token balance updates after generation
-- [ ] Expiry panel display when demo expires
-- [ ] Admin QR token generation and export
+- [ ] **/demo/activate/:token flow**:
+  - Loading state displays
+  - Success → Redirect to /demo
+  - Error states display correctly
+- [ ] **ChatInterface**:
+  - 3-stage generation works
+  - Markdown renders correctly
+  - Copy button copies to clipboard
+  - Token balance updates after generation
+- [ ] **Feedback → Upgrade flow**:
+  - Feedback dialog opens after generation
+  - Submit → Success toast
+  - Upgrade dialog opens
+  - "Maybe Later" dismisses dialog
+- [ ] **Expiry panel**: Displays when demo expires
+- [ ] **Admin QR token generation**: Token created, QR exported
 
 **E2E Happy Path:**
-1. Scan QR → /demo/activate/ABC123
-2. Account created, redirected to /demo
-3. Select preset, generate 3-stage Omega prompt
-4. Submit feedback
-5. Offered Google OAuth upgrade
-6. Upgrade → full account with preserved data
+1. Admin generates QR token in admin dashboard
+2. User scans QR → Opens /demo/activate/ABC123
+3. Account created, redirected to /demo
+4. User selects "Customer Support" preset
+5. User completes 3-stage generation
+6. User submits 5-star feedback
+7. Upgrade dialog appears
+8. User clicks "Upgrade with Google"
+9. OAuth flow completes → Full account with preserved data
 
-**Cross-browser:**
-- [ ] Desktop: Chrome, Firefox, Safari
-- [ ] Mobile: Safari (iOS), Chrome (Android)
+**Cross-browser Testing:**
+- [ ] **Desktop**: Chrome, Firefox, Safari
+- [ ] **Mobile**: Safari (iOS), Chrome (Android)
+- [ ] Verify QR scanning works on mobile devices
 
-**Accessibility:**
-- [ ] Keyboard navigation: Tab through all interactive elements
-- [ ] Screen reader: ARIA labels on icons, dialogs announced
-- [ ] Focus visible: 2px ring on all focusable elements
-- [ ] Contrast: WCAG AA (4.5:1) verified with axe DevTools
+**Accessibility Testing:**
+- [ ] **Keyboard navigation**: Tab through all interactive elements
+- [ ] **Screen reader**: ARIA labels on icons, dialogs announced properly
+- [ ] **Focus visible**: 2px ring on all focusable elements (CSS: focus-visible)
+- [ ] **Contrast**: WCAG AA (4.5:1) verified with axe DevTools
+- [ ] **Lang attribute**: lang="cs" on education pages
 
 ---
 
-### Phase 6 – Deployment & Ops (Status: Not Started)
+### 🚀 Phase 6 – Deployment & Ops (NOT STARTED)
+
 **Goal:** Deploy to preview and production
 
-**Pre-deployment:**
-- [ ] Run frontend build: `yarn build` (no errors)
-- [ ] Run backend lint: `ruff check backend/` (no errors)
+**Pre-deployment Checklist:**
+- [ ] Run `yarn build` in /app/frontend (no errors)
+- [ ] Run `ruff check /app/backend` (no linting errors)
 - [ ] Verify .env files (no hardcoded secrets in code)
-- [ ] Check supervisor config (backend on 8001, frontend on 3000)
+- [ ] Check supervisor config (backend on 0.0.0.0:8001, frontend on 3000)
+- [ ] Test demo activation flow locally
+- [ ] Test admin QR token generation locally
 
-**Deployment:**
+**Preview Deployment:**
 - [ ] Deploy to preview: https://quantum-codex-1.preview.emergentagent.com
-- [ ] Smoke test:
-  - Education page loads (public)
+- [ ] **Smoke tests**:
+  - Education page loads (public, no auth)
   - Demo activation with test token
   - Generator 3-stage flow
+  - Feedback submission
   - Admin login and QR token generation
 - [ ] Monitor logs: `tail -f /var/log/supervisor/*.log`
-- [ ] Verify mobile Safari compatibility
+- [ ] Verify mobile Safari compatibility (critical for QR scanning)
 
 **Production Deployment:**
-- [ ] Deploy to omega-aurora.info (when preview validated)
-- [ ] Update CORS if needed
+- [ ] Deploy to omega-aurora.info (after preview validation)
+- [ ] Update CORS for production domain
 - [ ] Configure production SMS provider (for phone verification, hidden UI)
-- [ ] Set up monitoring/alerts for demo activation rate spikes
+- [ ] Set up monitoring/alerts:
+  - Demo activation rate spikes (>100/hour)
+  - Error rate on /api/demo/activate (>5%)
+  - Demo expiry rate without upgrade (>80%)
+
+**Post-Deployment Monitoring:**
+- [ ] Check activation logs for first 24 hours
+- [ ] Verify QR codes work from printed materials
+- [ ] Monitor user feedback ratings
+- [ ] Track Google OAuth upgrade conversion rate
 
 ---
 
-## 5) Technical Details
-
-### Collections Schema
-```javascript
-// users
-{
-  id: UUID,
-  email: string | null,
-  name: string | null,
-  is_demo: boolean,
-  demo_expires_at: datetime | null,
-  is_admin: boolean,
-  is_banned: boolean,
-  phone_number: string | null,
-  phone_verified: boolean,
-  referral_code: string,
-  referred_by: string | null,
-  omega_tokens_balance: int,
-  created_at: datetime,
-  google_id: string | null
-}
-
-// demo_activation_tokens
-{
-  id: UUID,
-  token: string,
-  label: string,
-  created_by: UUID,
-  max_activations: int | null,
-  activations_count: int,
-  status: 'active' | 'disabled' | 'expired',
-  created_at: datetime,
-  notes: string | null
-}
-
-// feedback
-{
-  id: UUID,
-  user_id: UUID,
-  rating: int,
-  comment: string,
-  keywords: string[],
-  created_at: datetime
-}
-
-// generated_prompts (existing)
-// token_transactions (existing)
-// audit_logs (existing)
-// settings (existing)
-```
+## 3) Technical Specifications
 
 ### API Contracts
 
 **POST /api/demo/activate**
 ```json
-Request: { "token": "ABC123XYZ", "ref": "OMEGA-456" }
-Response: {
+Request:
+{
+  "token": "OMEGA-2025-ABC",
+  "ref": "OMEGA-456"  // optional
+}
+
+Response (200 OK):
+{
   "user": {
-    "id": "uuid",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
     "is_demo": true,
     "demo_expires_at": "2025-01-25T14:30:00Z",
-    "tokens_balance": 100000
+    "tokens_balance": 100000,
+    "created_at": "2025-01-22T14:30:00Z"
   },
-  "jwt": "eyJ..."
+  "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
+
+Errors:
+- 404: Token not found
+- 400: Token expired or max activations reached
+- 429: Too many activation attempts (rate limit)
 ```
 
 **POST /api/feedback**
 ```json
-Request: {
+Request:
+{
   "rating": 5,
-  "comment": "Amazing tool!",
-  "keywords": ["business", "consulting", "ai"]
+  "comment": "Amazing tool for business consulting!",
+  "keywords": ["business", "consulting", "ai", "prompts"]
 }
-Response: { "success": true }
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Feedback submitted successfully"
+}
 ```
 
 **POST /api/auth/google/upgrade**
 ```json
-Request: { "session_id": "emergent_session_xyz" }
-Response: {
-  "user": { "id": "uuid", "is_demo": false, "email": "user@example.com" },
-  "jwt": "eyJ..."
+Request:
+{
+  "session_id": "emergent_session_xyz123"
+}
+
+Response (200 OK):
+{
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "is_demo": false,
+    "email": "user@example.com",
+    "name": "John Doe",
+    "tokens_balance": 95000,  // preserved from demo
+    "google_id": "google_oauth_id_123"
+  },
+  "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
 **POST /api/admin/qr-tokens**
 ```json
-Request: {
-  "label": "Prague Conference 2025",
+Request:
+{
+  "label": "Prague AI Conference 2025",
   "max_activations": 50,
-  "notes": "Main hall booth"
+  "notes": "Main hall booth, distribute on Day 1"
 }
-Response: {
-  "id": "uuid",
-  "token": "ABC123XYZ",
-  "activation_link": "https://omega-aurora.info/demo/activate/ABC123XYZ",
-  "qr_code_url": "/api/admin/qr-tokens/{id}/export"
+
+Response (201 Created):
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000",
+  "token": "OMEGA-2025-PRG",
+  "label": "Prague AI Conference 2025",
+  "activation_link": "https://omega-aurora.info/demo/activate/OMEGA-2025-PRG",
+  "qr_code_url": "/api/admin/qr-tokens/660e8400-e29b-41d4-a716-446655440000/export",
+  "max_activations": 50,
+  "activations_count": 0,
+  "status": "active",
+  "created_at": "2025-01-22T10:00:00Z"
 }
 ```
 
-### Generator Policy
-| User Type | Phone Verified | Generator Access |
-|-----------|---------------|------------------|
-| Demo (not expired) | N/A | ✅ Unlocked |
-| Demo (expired) | N/A | ❌ Blocked (upgrade prompt) |
-| Full account | ❌ No | ❌ Blocked (phone verify prompt) |
-| Full account | ✅ Yes | ✅ Unlocked |
-| Admin | N/A | ✅ Unlocked (bypass) |
+### Generator Access Policy
 
-### Referral for Demo Accounts
-- Activation URL: `/demo/activate/ABC123?ref=OMEGA-456`
-- Backend: stores `referred_by` on user creation
-- Optional: reward referrer with tokens (configurable in admin settings)
-- Tracking: admin dashboard shows referral stats per demo activation
+| User Type | Phone Verified | Demo Status | Generator Access |
+|-----------|---------------|-------------|------------------|
+| Demo (not expired) | N/A | Active | ✅ Unlocked |
+| Demo (expired) | N/A | Expired | ❌ Blocked → Upgrade prompt |
+| Full account | ❌ No | N/A | ❌ Blocked → Phone verify prompt |
+| Full account | ✅ Yes | N/A | ✅ Unlocked |
+| Admin | N/A | N/A | ✅ Unlocked (bypass all checks) |
 
----
+### Referral System for Demo Accounts
 
-## 6) Success Criteria
+**Activation URL Format:**
+```
+https://omega-aurora.info/demo/activate/OMEGA-2025-ABC?ref=OMEGA-456
+```
 
-**User Experience:**
-- [ ] Conference visitor scans QR → generating Omega prompt in <10 seconds (≤2 clicks after scan)
-- [ ] Demo accounts expire exactly 72h after activation (UTC timezone-aware)
-- [ ] Generator locked with clear messaging after expiry
-- [ ] Feedback → Google OAuth upgrade flow is intuitive and non-intrusive
-- [ ] Education section readable and beautiful (Czech text, proper spacing, contrast)
-
-**Admin Experience:**
-- [ ] Admin can generate QR tokens (single or batch) in <30 seconds
-- [ ] Admin can export QR codes as PNG and activation links as CSV
-- [ ] Admin can disable tokens and see real-time activation counts
-- [ ] Admin can filter users by demo/full/expired status
-
-**Technical:**
-- [ ] No hardcoded URLs or secrets in codebase
-- [ ] All /api routes functional via REACT_APP_BACKEND_URL
-- [ ] JWT Authorization header works in Safari (mobile + desktop)
-- [ ] GDPR export/delete operational for demo accounts
-- [ ] Audit logs capture all demo activations and admin actions
-
-**Design:**
-- [ ] UI adheres to Ω-Aurora design guidelines (colors, typography, spacing)
-- [ ] All interactive elements have data-testid attributes
-- [ ] Gradients <20% viewport coverage, never on reading areas
-- [ ] WCAG AA contrast ratios met
-- [ ] Smooth animations with prefers-reduced-motion fallback
+**Backend Logic:**
+1. Extract `ref` parameter from activation request
+2. Look up referrer by referral_code
+3. Store `referred_by` on new demo user
+4. If referral rewards enabled in settings:
+   - Credit referrer with configured token amount (default: 10,000)
+   - Create token_transaction record
+5. Track referral stats in admin dashboard
 
 ---
 
-## 7) Current Status
+## 4) Success Criteria
 
-**Completed:**
-- ✅ Design guidelines created (design_guidelines.md)
-- ✅ Education content prepared (educationTexts.js with Czech text)
-- ✅ Existing infrastructure: FastAPI backend, React frontend, MongoDB, JWT auth
+### User Experience
+- [ ] Conference visitor scans QR → generating Omega prompt in **<10 seconds** (≤2 clicks)
+- [ ] Demo accounts expire **exactly 72 hours** after activation (UTC timezone-aware)
+- [ ] Generator locked with **clear, friendly messaging** after expiry
+- [ ] Feedback → Google OAuth upgrade flow is **intuitive and non-intrusive**
+- [ ] Education section is **readable and beautiful** (Czech text, proper spacing, contrast)
 
-**In Progress:**
-- None (awaiting approval to start implementation)
+### Admin Experience
+- [ ] Admin can generate QR tokens (single or batch) in **<30 seconds**
+- [ ] Admin can export QR codes as **PNG** and activation links as **CSV**
+- [ ] Admin can disable tokens and see **real-time activation counts**
+- [ ] Admin can filter users by **demo/full/expired status**
 
-**Blocked:**
-- None
+### Technical
+- [ ] **No hardcoded URLs or secrets** in codebase
+- [ ] All /api routes functional via **REACT_APP_BACKEND_URL**
+- [ ] JWT Authorization header works in **Safari** (mobile + desktop)
+- [ ] GDPR export/delete operational for **demo accounts**
+- [ ] Audit logs capture **all demo activations** and admin actions
 
-**Next Immediate Actions:**
-1. Start Phase 0: Apply design tokens and create OmegaLogo component
-2. Build EducationSelector with Czech content
-3. Create public /education route
-4. Then move to Phase 1: Backend QR activation system
+### Design
+- [ ] UI adheres to **Ω-Aurora design guidelines** (colors, typography, spacing)
+- [ ] All interactive elements have **data-testid attributes**
+- [ ] Gradients **<20% viewport coverage**, never on reading areas
+- [ ] **WCAG AA contrast ratios** met (4.5:1 minimum)
+- [ ] Smooth animations with **prefers-reduced-motion fallback**
 
 ---
 
-## 8) Rollback Plan
+## 5) Rollback Plan
 
 **If deployment fails:**
 - Previous version available via Emergent platform version history
@@ -527,9 +635,9 @@ Response: {
 
 ---
 
-## 9) Post-Launch Monitoring
+## 6) Post-Launch Monitoring
 
-**Metrics to track:**
+**Metrics to Track:**
 - Demo activation rate (per QR token)
 - Generator usage by demo accounts
 - Feedback submission rate
@@ -538,15 +646,15 @@ Response: {
 - Token consumption patterns
 
 **Alerts:**
-- Spike in demo activations (>100/hour) → potential abuse
-- High error rate on /api/demo/activate → token issues
-- Demo expiry rate >80% without upgrade → improve upgrade CTA
+- Spike in demo activations (>100/hour) → Potential abuse or viral spread
+- High error rate on /api/demo/activate (>5%) → Token or backend issues
+- Demo expiry rate >80% without upgrade → Improve upgrade CTA
 
 ---
 
-## 10) Future Enhancements (Post-MVP)
+## 7) Future Enhancements (Post-MVP)
 
-**Not in current scope, but documented for future:**
+**Not in current scope, documented for future:**
 - Email notifications: 24h before demo expiry reminder
 - Demo extension: Allow 1-time 24h extension via email opt-in
 - Advanced referral analytics: Track conversion funnel per referrer
@@ -554,9 +662,30 @@ Response: {
 - Generator templates: Save and reuse custom presets
 - Usage analytics dashboard for users: Show token consumption over time
 - Payment integration: GoPay for token purchases (backend exists, needs UI)
+- Webhook support: Notify external systems on demo activations
 
 ---
 
-**Plan Version:** 2.0 (Updated for Google OAuth upgrade after feedback)  
-**Last Updated:** 2025-01-22  
-**Status:** Ready for Implementation
+## 8) Next Immediate Actions
+
+1. **Start Phase 1**: Implement backend QR activation system
+   - Create demo_activation_tokens collection
+   - Implement POST /api/demo/activate endpoint
+   - Add is_demo and demo_expires_at fields to users collection
+   - Implement demo expiry middleware
+
+2. **Test Phase 1**: Verify activation flow works end-to-end
+   - Create test QR token in database
+   - Test activation via curl
+   - Verify JWT claims include demo status
+
+3. **Move to Phase 2**: Build frontend activation page
+   - Create /demo/activate/:token route
+   - Implement loading and error states
+   - Test with Phase 1 backend
+
+---
+
+**Plan Version:** 2.1  
+**Last Updated:** 2025-01-22 08:35 UTC  
+**Status:** Phase 0 Complete ✅ | Phase 1 In Progress 🚧
