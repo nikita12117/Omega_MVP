@@ -1098,6 +1098,29 @@ async def generate_omega_prompt(request: GenerateRequest, http_request: Request)
     # Require authentication
     user = await require_auth(http_request)
     
+    # Check demo expiry
+    if user.get("is_demo"):
+        if user.get("demo_expires_at"):
+            expiry_time = user["demo_expires_at"]
+            if isinstance(expiry_time, str):
+                expiry_time = datetime.fromisoformat(expiry_time)
+            
+            if datetime.now(timezone.utc) >= expiry_time:
+                raise HTTPException(
+                    status_code=401, 
+                    detail="demo_expired",
+                    headers={"X-Error-Type": "demo_expired"}
+                )
+    
+    # Check phone verification for non-demo, non-admin users
+    if not user.get("is_demo") and not user.get("is_admin"):
+        if not user.get("phone_verified", False):
+            raise HTTPException(
+                status_code=403, 
+                detail="phone_verification_required",
+                headers={"X-Error-Type": "phone_verification_required"}
+            )
+    
     # Check if user is banned
     if user.get("is_banned", False):
         raise HTTPException(status_code=403, detail="Váš účet byl zablokován administrátorem")
