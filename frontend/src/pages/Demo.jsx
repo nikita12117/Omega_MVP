@@ -25,6 +25,7 @@ import DemoActivationPrompt from '@/components/demo/DemoActivationPrompt';
 import DemoExpiredPanel from '@/components/demo/DemoExpiredPanel';
 import FeedbackDialog from '@/components/demo/FeedbackDialog';
 import GoogleUpgradeDialog from '@/components/demo/GoogleUpgradeDialog';
+import OmegaLogo from '@/components/OmegaLogo';
 
 
 
