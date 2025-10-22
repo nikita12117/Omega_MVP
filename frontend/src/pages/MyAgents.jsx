@@ -191,8 +191,9 @@ const MyAgents = () => {
                 transition={{ duration: 0.3 }}
               >
                 <Card 
-                  className="bg-[#10172a] border-[#25365a] p-6 hover:border-[#06d6a0]/50 transition-all group"
+                  className="bg-[#10172a] border-[#25365a] p-6 hover:border-[#06d6a0]/50 transition-all cursor-pointer group"
                   data-testid={`agent-card-${agent.id}`}
+                  onClick={() => handleViewPrompt(agent, agent.has_v9)}
                 >
                   {/* Agent Name */}
                   <div className="flex items-start justify-between mb-3">
@@ -200,21 +201,21 @@ const MyAgents = () => {
                       {agent.agent_name}
                     </h3>
                     {agent.has_v9 && (
-                      <Badge className="bg-[#06d6a0]/10 text-[#06d6a0] border-[#06d6a0]/30">
+                      <Badge className="bg-[#06d6a0]/10 text-[#06d6a0] border-[#06d6a0]/30 ml-2 flex-shrink-0">
                         v-9
                       </Badge>
                     )}
                   </div>
 
-                  {/* Description */}
-                  <p className="text-sm text-[#9fb4d0] mb-4 line-clamp-2">
-                    {agent.description}
+                  {/* AI-Generated Short Description */}
+                  <p className="text-sm text-[#9fb4d0] mb-4 line-clamp-3">
+                    {agent.short_description || agent.description}
                   </p>
 
                   <Separator className="mb-4 bg-[#25365a]/50" />
 
                   {/* Metadata */}
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-[#9fb4d0]">
                       <Calendar className="h-3 w-3" />
                       <span>{formatDate(agent.created_at)}</span>
@@ -222,39 +223,13 @@ const MyAgents = () => {
                     
                     <div className="flex items-center gap-2 text-xs text-[#9fb4d0]">
                       <Coins className="h-3 w-3 text-[#06d6a0]" />
-                      <span>{agent.total_tokens_used?.toLocaleString()} tokenů</span>
+                      <span>{agent.total_tokens_used?.toLocaleString()} tokenů celkem</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-[#9fb4d0]">
                       <Brain className="h-3 w-3 text-[#1e3a8a]" />
                       <span>{agent.master_prompt_version}</span>
                     </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button
-                      data-testid={`view-basic-${agent.id}`}
-                      onClick={() => handleViewPrompt(agent, false)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-[#25365a] hover:bg-[#152040] text-xs"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Basic
-                    </Button>
-                    
-                    {agent.has_v9 && (
-                      <Button
-                        data-testid={`view-v9-${agent.id}`}
-                        onClick={() => handleViewPrompt(agent, true)}
-                        size="sm"
-                        className="flex-1 bg-gradient-to-r from-[#1e3a8a] to-[#06d6a0] hover:from-[#2a4aa0] hover:to-[#07f0b8] text-xs"
-                      >
-                        <Brain className="h-3 w-3 mr-1" />
-                        v-9
-                      </Button>
-                    )}
                   </div>
                 </Card>
               </motion.div>
