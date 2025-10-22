@@ -2837,7 +2837,8 @@ from openai_service import (
     generate_agent_questions,
     refine_agent_concept,
     finalize_agent_prompt,
-    chat_with_agent
+    chat_with_agent,
+    transform_to_v9_protocol
 )
 from learning_loop import initialize_master_prompt, process_learning_loop
 
