@@ -1,50 +1,10 @@
 [
   {
-    "content": "Add Inter + JetBrains Mono font imports to public/index.html",
-    "status": "in_progress"
-  },
-  {
-    "content": "Inject Ω-Aurora design tokens and CSS custom properties into src/index.css",
-    "status": "pending"
-  },
-  {
-    "content": "Install required dependencies: framer-motion, react-markdown, remark-gfm, react-tsparticles, tsparticles, emergentintegrations",
+    "content": "Update Admin Settings SMS tab with provider selection",
     "status": "completed"
   },
   {
-    "content": "Create src/components/brand/LogoOmega.jsx component with neural pathway SVG animation",
-    "status": "pending"
-  },
-  {
-    "content": "Create src/components/layout/TopNav.jsx with sticky navigation and routes",
-    "status": "pending"
-  },
-  {
-    "content": "Create src/lib/education-texts.js with provided education data",
-    "status": "pending"
-  },
-  {
-    "content": "Create src/pages/Education.jsx with split layout, document/perspective toggles",
-    "status": "pending"
-  },
-  {
-    "content": "Create src/pages/Demo.jsx with chat interface and markdown output panel",
-    "status": "pending"
-  },
-  {
-    "content": "Update App.js with React Router for /education and /demo routes",
-    "status": "pending"
-  },
-  {
-    "content": "Create src/components/visuals/NeuralLinks.jsx for background effects",
-    "status": "pending"
-  },
-  {
-    "content": "Implement backend POST /api/generate endpoint with OpenAI integration",
-    "status": "pending"
-  },
-  {
-    "content": "Test application with curl and screenshot_tool, fix any bugs",
-    "status": "pending"
+    "content": "Test SMS provider selection and settings save",
+    "status": "completed"
   }
 ]

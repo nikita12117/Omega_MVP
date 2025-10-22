@@ -4,29 +4,40 @@
 
 @layer base {
   :root {
-    --background: 219 47% 8.0%;
-    --foreground: 210 40% 98%;
-    --card: 219 47% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 219 47% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 70% 96%;
-    --primary-foreground: 223 47% 10%;
-    --secondary: 224 56% 34%;
-    --secondary-foreground: 0 0% 100%;
-    --accent: 162 88% 43%;
-    --accent-foreground: 210 40% 98%;
-    --muted: 220 35% 16%;
-    --muted-foreground: 215 20% 70%;
-    --border: 220 35% 22%;
-    --input: 220 35% 22%;
-    --ring: 162 88% 43%;
+    /* Aurora Color Palette */
+    --aurora-violet: 271 76% 53%;      /* #8A2BE2 - Primary Core */
+    --electric-cyan: 180 100% 50%;     /* #00FFFF - Energy Flow */
+    --aurora-green: 165 100% 50%;      /* #00FFAA - Vital Gradient */
+    --solar-magenta: 300 100% 50%;     /* #FF00FF - Harmonic Spectrum */
+    --cosmic-midnight: 240 50% 8%;     /* #0A0A1F - Depth Base */
+    --stellar-white: 210 100% 95%;     /* #E6F1FF - Highlight Layer */
+    
+    /* Semantic Tokens */
+    --background: 240 50% 8%;          /* Cosmic Midnight */
+    --foreground: 210 100% 95%;        /* Stellar White */
+    --card: 240 50% 12%;               /* Slightly lighter than background */
+    --card-foreground: 210 100% 95%;
+    --popover: 240 50% 12%;
+    --popover-foreground: 210 100% 95%;
+    --primary: 271 76% 53%;            /* Aurora Violet */
+    --primary-foreground: 210 100% 95%;
+    --secondary: 180 100% 50%;         /* Electric Cyan */
+    --secondary-foreground: 240 50% 8%;
+    --accent: 165 100% 50%;            /* Aurora Green */
+    --accent-foreground: 240 50% 8%;
+    --muted: 240 40% 18%;
+    --muted-foreground: 210 30% 70%;
+    --border: 240 40% 22%;
+    --input: 240 40% 22%;
+    --ring: 165 100% 50%;              /* Aurora Green */
     --radius: 0.625rem;
-    --elevation-1: 0 10px 30px -10px rgba(6, 214, 160, 0.18);
-    --glow-teal: 0 0 0 3px rgba(6,214,160,0.24);
+    
+    /* Effects & Shadows */
+    --elevation-1: 0 10px 30px -10px rgba(0, 255, 170, 0.18);
+    --glow-aurora: 0 0 0 3px rgba(0, 255, 170, 0.24);
     --noise-opacity: 0.03;
     --btn-radius: 0.625rem;
-    --btn-shadow: 0 12px 24px -12px rgba(6,214,160,0.35);
+    --btn-shadow: 0 12px 24px -12px rgba(138, 43, 226, 0.35);
     --btn-motion: 150ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
@@ -41,8 +52,8 @@ body {
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: rgb(10, 15, 29);
-  color: rgb(248, 250, 252);
+  background-color: rgb(10, 10, 31); /* Cosmic Midnight */
+  color: rgb(230, 241, 255); /* Stellar White */
 }
 
 code {
@@ -55,8 +66,8 @@ code {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(60% 60% at 20% 10%, rgba(6,214,160,0.12) 0%, rgba(6,214,160,0) 60%),
-    radial-gradient(40% 40% at 80% 30%, rgba(30,58,138,0.18) 0%, rgba(30,58,138,0) 60%);
+    radial-gradient(60% 60% at 20% 10%, rgba(0,255,170,0.12) 0%, rgba(0,255,170,0) 60%),
+    radial-gradient(40% 40% at 80% 30%, rgba(138,43,226,0.18) 0%, rgba(138,43,226,0) 60%);
   filter: blur(32px);
   pointer-events: none;
   z-index: -1;
@@ -78,8 +89,8 @@ html {
 
 /* Selection color */
 ::selection {
-  background-color: rgba(6, 214, 160, 0.3);
-  color: rgb(248, 250, 252);
+  background-color: rgba(0, 255, 170, 0.3); /* Aurora Green */
+  color: rgb(230, 241, 255); /* Stellar White */
 }
 
 /* Reduced motion preference */
@@ -104,10 +115,10 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(6, 214, 160, 0.3);
+  background: rgba(0, 255, 170, 0.3); /* Aurora Green */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(6, 214, 160, 0.5);
+  background: rgba(0, 255, 170, 0.5); /* Aurora Green */
 }
