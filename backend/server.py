@@ -3068,7 +3068,7 @@ async def admin_get_agents(
     try:
         sort_direction = -1 if sort == "created_at" else 1
         
-        agents_cursor = db.agents.find().sort(sort, sort_direction).limit(limit)
+        agents_cursor = db.agents.find({}, {"_id": 0}).sort(sort, sort_direction).limit(limit)
         agents = await agents_cursor.to_list(length=limit)
         
         return {"agents": agents, "count": len(agents)}
@@ -3088,7 +3088,7 @@ async def admin_get_master_prompts(http_request: Request):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        prompts_cursor = db.master_prompts.find().sort("created_at", -1)
+        prompts_cursor = db.master_prompts.find({}, {"_id": 0}).sort("created_at", -1)
         prompts = await prompts_cursor.to_list(length=100)
         
         return {"master_prompts": prompts, "count": len(prompts)}
