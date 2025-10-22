@@ -395,7 +395,7 @@ ADMIN_PASSWORD=cUtsuv-8nirbe-tippop
 
 # OAuth
 EMERGENT_AUTH_API_URL=https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data
-FRONTEND_URL=https://omegatalker.preview.emergentagent.com
+FRONTEND_URL=https://agent-forge-49.preview.emergentagent.com
 ```
 
 ### Frontend Environment Variables (`/app/frontend/.env`)
@@ -460,7 +460,7 @@ tail -f /var/log/supervisor/frontend.err.log
 - **Proxy:** API requests go to backend via REACT_APP_BACKEND_URL
 
 ### Preview URL
-https://omegatalker.preview.emergentagent.com
+https://agent-forge-49.preview.emergentagent.com
 
 **Kubernetes Routing:**
 - `/api/*` → Backend (port 8001)
@@ -1196,7 +1196,7 @@ cd ../frontend && yarn start &
 - Password: From `.env` → `ADMIN_PASSWORD`
 
 ### Preview URL
-https://omegatalker.preview.emergentagent.com
+https://agent-forge-49.preview.emergentagent.com
 
 ---
 
