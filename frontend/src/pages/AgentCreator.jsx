@@ -614,24 +614,14 @@ const AgentCreator = () => {
 
               <div className="mt-6 flex gap-3">
                 {!isV9Transformed && (
-                  <Button
-                    data-testid="v9-transform-btn"
+                  <V9TransformButton
                     onClick={handleV9Transform}
+                    isTransforming={isTransformingV9}
                     disabled={isTransformingV9}
-                    className="flex-1 bg-gradient-to-r from-[#1e3a8a] to-[#06d6a0] hover:from-[#2a4aa0] hover:to-[#07f0b8] text-white font-semibold h-12"
+                    className="flex-1 bg-[#10172a] border-2 border-[#25365a] hover:border-[#06d6a0]/50 text-white font-semibold h-12 text-base"
                   >
-                    {isTransformingV9 ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Transformuji na v-9 protokol...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="mr-2 h-4 w-4" />
-                        Transformovat na v-9 Protocol
-                      </>
-                    )}
-                  </Button>
+                    Transformovat na v-9 Protocol
+                  </V9TransformButton>
                 )}
                 
                 <Button
