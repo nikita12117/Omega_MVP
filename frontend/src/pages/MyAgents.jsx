@@ -240,46 +240,77 @@ const MyAgents = () => {
 
       {/* Prompt View Modal */}
       <Dialog open={showPromptModal} onOpenChange={setShowPromptModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] bg-[#10172a] border-[#25365a] text-[#e6f1ff]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+        <DialogContent className="max-w-5xl max-h-[85vh] bg-[#10172a] border-[#25365a] text-[#e6f1ff]">
+          <DialogHeader className="pr-12">
+            <DialogTitle className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-xl">
                   {selectedAgent?.agent_name}
                 </span>
-                {viewingV9 && (
+                {selectedAgent?.has_v9 && viewingV9 && (
                   <Badge className="bg-[#06d6a0]/10 text-[#06d6a0] border-[#06d6a0]/30">
                     v-9 Protocol
                   </Badge>
                 )}
               </div>
               
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCopy}
-                  variant="outline"
-                  size="sm"
-                  className="border-[#25365a] hover:bg-[#152040]"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Kopírovat
-                </Button>
-                <Button
-                  onClick={handleDownload}
-                  variant="outline"
-                  size="sm"
-                  className="border-[#25365a] hover:bg-[#152040]"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Stáhnout
-                </Button>
+              <div className="flex items-center justify-between">
+                {/* Version Toggle */}
+                {selectedAgent?.has_v9 && (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setViewingV9(false)}
+                      variant={!viewingV9 ? "default" : "outline"}
+                      size="sm"
+                      className={!viewingV9 
+                        ? "bg-[#1e3a8a] hover:bg-[#2a4aa0]" 
+                        : "border-[#25365a] hover:bg-[#152040]"}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Basic
+                    </Button>
+                    <Button
+                      onClick={() => setViewingV9(true)}
+                      variant={viewingV9 ? "default" : "outline"}
+                      size="sm"
+                      className={viewingV9
+                        ? "bg-gradient-to-r from-[#1e3a8a] to-[#06d6a0]" 
+                        : "border-[#25365a] hover:bg-[#152040]"}
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      v-9 Protocol
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="flex gap-2 ml-auto">
+                  <Button
+                    onClick={handleCopy}
+                    variant="outline"
+                    size="sm"
+                    className="border-[#25365a] hover:bg-[#152040]"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Kopírovat
+                  </Button>
+                  <Button
+                    onClick={handleDownload}
+                    variant="outline"
+                    size="sm"
+                    className="border-[#25365a] hover:bg-[#152040]"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Stáhnout
+                  </Button>
+                </div>
               </div>
             </DialogTitle>
           </DialogHeader>
 
           <Separator className="bg-[#25365a]/50" />
 
-          <ScrollArea className="h-[500px] rounded-lg border border-[#25365a] bg-[#0f1b33] p-6">
+          <ScrollArea className="h-[550px] rounded-lg border border-[#25365a] bg-[#0f1b33] p-6">
             <div className="prose prose-invert prose-sm max-w-none">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {viewingV9 && selectedAgent?.metadata?.v9_prompt
