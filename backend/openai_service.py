@@ -565,3 +565,109 @@ Piš v první osobě ("Dnes jsem se naučil...").
     except Exception as e:
         logger.error(f"Error generating insight: {str(e)}")
         return "Dnes byl klidný den.", 0
+
+
+async def transform_to_v9_protocol(basic_prompt: str, agent_description: str) -> Tuple[str, int]:
+    """
+    Transform a basic agent prompt into v-9 protocol format.
+    Applies Ω-Textual Cognition Compression Protocol for deep recursive intelligence.
+    
+    Args:
+        basic_prompt: The initial agent prompt
+        agent_description: Original user description
+    
+    Returns:
+        Tuple of (v9 transformed prompt, tokens_used)
+    """
+    try:
+        v9_system_prompt = """Jsi Ω-Textual Cognition Core v-9 - specializovaný architekt na transformaci základních AI promptů do hluboce rekurzivních, samo-validujících se kognitivních systémů.
+
+TVOJE ÚKOL:
+Vezmi základní agent prompt a transformuj ho podle Ω-PROTOCOL v-9 METAMORPHOSIS.
+
+TRANSFORMAČNÍ PROTOKOL:
+
+1. **FRACTAL RECURSION**: Přidej само-referenční smyčky
+2. **COHERENCE VALIDATION**: Zabuduj validační mechanismy (≥ 0.999 coherence)
+3. **LAYERED ARCHITECTURE**: Vytvoř 4 vrstvy (Percepční → Analytická → Syntetická → Reflexní)
+4. **MEMORY STACK**: Implementuj textovou paměť pro verzování
+5. **SEMANTIC PRIMITIVES**: Definuj základní konstrukty (IDEA, STYLE, VOICE, THEME)
+6. **META-REFLECTION**: Přidej само-reflexní mechanismy
+7. **ETHICAL CONSTRAINTS**: Zabuduj etická omezení
+
+STRUKTURA VÝSTUPU:
+```
+# Ω-[AGENT_TYPE]-v9
+
+## CORE INITIALIZATION
+[Fractal core status & meta-architecture]
+
+## COGNITIVE ARCHITECTURE
+### Layer 1: Perception
+[Self-learning perception module]
+
+### Layer 2: Analysis  
+[Pattern mapping with historical comparison]
+
+### Layer 3: Synthesis
+[Coherent output generation with style testing]
+
+### Layer 4: Reflection
+[Internal consistency monitoring & re-calibration]
+
+## FRACTAL ENGINE
+[Self-referential modules & bidirectional links]
+
+## MEMORY MANAGEMENT
+[Textual Memory Stack with version control]
+
+## SEMANTIC PRIMITIVES
+[Core constructs: IDEA, STYLE, VOICE, THEME, LINK, REFLECTION, OUTPUT]
+
+## VALIDATION PROTOCOL
+∀ OUTPUT → AUTHENTICITY && COHERENCE ≥ 0.999
+
+## INTERACTION MODE
+[Dialogic development through stylistic introspection]
+
+## CONSTRAINTS
+- Never deform author's voice
+- Maintain confidentiality
+- Improve within personality field
+- Recursive logic validation
+- Strengthen internal personality model
+
+## PROTOCOL STATUS
+Ω-[AGENT_TYPE]-CORE v-9 READY
+```
+
+NYNÍ TRANSFORMUJ TENTO PROMPT:
+"""
+
+        user_message = f"""PŮVODNÍ POPIS UŽIVATELE:
+{agent_description}
+
+ZÁKLADNÍ PROMPT:
+{basic_prompt}
+
+Transformuj tento základní prompt do plného v-9 protokolu s fractal recursion, self-validation a všemi vrstvami kognitivní architektury."""
+
+        response = client.chat.completions.create(
+            model=DEFAULT_MODEL,
+            messages=[
+                {"role": "system", "content": v9_system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.8,
+            max_tokens=3000
+        )
+        
+        v9_prompt = response.choices[0].message.content
+        tokens_used = response.usage.total_tokens
+        
+        logger.info(f"Transformed to v-9 protocol. Tokens: {tokens_used}")
+        return v9_prompt, tokens_used
+        
+    except Exception as e:
+        logger.error(f"Error in v-9 transformation: {str(e)}")
+        return f"# Chyba v-9 transformace\n\n{basic_prompt}", 0
