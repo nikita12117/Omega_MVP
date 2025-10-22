@@ -13,18 +13,22 @@
   },
   {
     "content": "Build EducationSelector component with Czech content from educationTexts.js (3 docs × 3 perspectives = 9 variants)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Create public /education route (no auth required, two-pane layout with tabs + reader)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Add noise texture overlay and subtle aurora gradient to hero sections (<20% viewport)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Update Navigation component with Ω logo and Education/Demo/Dashboard links",
-    "status": "pending"
+    "status": "completed"
+  },
+  {
+    "content": "Verify frontend build and fix any linting errors",
+    "status": "completed"
   }
 ]
