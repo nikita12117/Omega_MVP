@@ -3060,8 +3060,8 @@ async def get_my_agents(
     http_request: Request = None
 ):
     """
-    Get all agents created by the current user.
-    Supports pagination, sorting, and includes token costs.
+    Get all COMPLETED agents created by the current user.
+    Only returns agents that have been finalized (have generated_prompt).
     """
     user = await require_auth(http_request)
     
@@ -3069,8 +3069,11 @@ async def get_my_agents(
         # Determine sort direction
         sort_direction = -1  # Newest first by default
         
-        # Build query
-        query = {"user_id": user["id"]}
+        # Build query - only completed agents with generated_prompt
+        query = {
+            "user_id": user["id"],
+            "generated_prompt": {"$exists": True, "$ne": ""}
+        }
         
         # Get total count
         total_count = await db.agents.count_documents(query)
