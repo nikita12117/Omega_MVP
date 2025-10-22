@@ -737,6 +737,26 @@ export default function Demo() {
         open={showReferralModal}
         onClose={() => setShowReferralModal(false)}
       />
+
+      {/* Feedback Dialog - shown after successful generation */}
+      <FeedbackDialog
+        open={showFeedback}
+        onOpenChange={setShowFeedback}
+        onSuccess={() => {
+          setShowFeedback(false);
+          // Show upgrade dialog for demo users after feedback
+          if (user?.is_demo) {
+            setTimeout(() => setShowUpgrade(true), 300);
+          }
+        }}
+      />
+
+      {/* Google Upgrade Dialog - shown after feedback for demo users */}
+      <GoogleUpgradeDialog
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        user={user}
+      />
     </div>
   );
 }
