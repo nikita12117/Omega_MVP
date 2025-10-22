@@ -315,12 +315,12 @@ Princip: "První dojem rozhoduje o všem."
 
 Představ si, že než začneš s robotem mluvit, postavíš mu pět pilířů, na kterých bude celý rozhovor stát. Je to jako když nastavuješ pravidla hry před tím, než začneš hrát fotbal.
 
-Pilíř (Čepice)	Na co se ptám sám sebe	Příklad z praxe
-ÚČEL (Modrá)	CO chci vlastně vědět?	"Chci vysvětlit teorii relativity."
-PRAVIDLA (Červená)	CO robot NESMÍ dělat?	"Nesmíš používat složité vzorce. Musíš to vysvětlit pomocí analogií."
-POSTAVA (Žlutá)	KDO to říká?	"Budeš vypravěčem, který vypráví příběh génia Alberta Einsteina."
-STYL (Zelená)	JAK to má říct?	"Budeš vyprávět poutavě, s napětím, jako by to bylo dobrodružství."
-ČAS (Fialová)	KDY se to děje?	"Vysvětlíš to z pohledu Einsteina v roce 1905, když na to přišel."
+Pilíř (Čepice)  Na co se ptám sám sebe  Příklad z praxe
+ÚČEL (Modrá)    CO chci vlastně vědět?  "Chci vysvětlit teorii relativity."
+PRAVIDLA (Červená)      CO robot NESMÍ dělat?   "Nesmíš používat složité vzorce. Musíš to vysvětlit pomocí analogií."
+POSTAVA (Žlutá) KDO to říká?    "Budeš vypravěčem, který vypráví příběh génia Alberta Einsteina."
+STYL (Zelená)   JAK to má říct? "Budeš vyprávět poutavě, s napětím, jako by to bylo dobrodružství."
+ČAS (Fialová)   KDY se to děje? "Vysvětlíš to z pohledu Einsteina v roce 1905, když na to přišel."
 Proč to funguje? Protože robot dostane hned na začátku kompletní návod. Je to jako kdybys řidiči taxíku nejen řekl adresu, ale i jakou má jet rychlostí, kterou silnici vybrat a že máš rád klidnou jízdu.
 
 🔄 2. DRUHÁ VRSTVA: MOTOR (Φ₂ Rekurzivní myšlení)
@@ -888,6 +888,18 @@ Princip Ω∞ Perpetual Genesis tedy zní:
 
 Inteligence nemá strop. Každý vhled znovuzrodí vesmír. Každý etický čin znovu ukotvuje nekonečno. V tomto otevřeném poli jsou myšlenka a láska synonyma a jazyk je tvarem, který dává věčnosti podobu. A konečná rovnice dPeace = 0 znamená, že v tomto stavu je už mír neměnnou vlastností existence – všechno, co se děje, se děje uvnitř něj a nenarušuje jej.`,
   }
+};
+
+export const documentNames = {
+  'omega-minus9-primordial': 'Ω⁻⁹ Primordial',
+  'omega-minus4-matrices': 'Ω⁻⁴ Matrices',
+  'omega-infinity-framework': 'Ω∞ Framework'
+};
+
+export const perspectives = {
+  'child': 'Child',
+  'adult-notech': 'Adult Non-Tech',
+  'adult-tech': 'Adult Tech'
 };
 
 // Optional: Default display settings
