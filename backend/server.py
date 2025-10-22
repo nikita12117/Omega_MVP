@@ -2829,6 +2829,416 @@ async def anonymize_old_data(request: Request):
         logger.error(f"Error anonymizing old data: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+
+# ========== Ω-KOMPRESNÍ ROVNICE API ENDPOINTS ==========
+
+# Import OpenAI service functions
+from openai_service import (
+    generate_agent_questions,
+    refine_agent_concept,
+    finalize_agent_prompt,
+    chat_with_agent
+)
+from learning_loop import initialize_master_prompt, process_learning_loop
+
+
+# Agent Creation Endpoints
+
+@api_router.post("/start-agent", response_model=StartAgentResponse)
+async def start_agent_creation(request: StartAgentRequest, http_request: Request):
+    """
+    Step 1: Start agent creation process.
+    Generate clarifying questions based on user's description.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Get active Master Prompt
+        master_prompt_doc = await db.master_prompts.find_one({"status": "active"})
+        if not master_prompt_doc:
+            raise HTTPException(status_code=500, detail="No active Master Prompt found")
+        
+        master_prompt = master_prompt_doc["content"]
+        
+        # Generate clarifying questions
+        questions, tokens_used = await generate_agent_questions(request.description, master_prompt)
+        
+        # Create initial agent document
+        agent_id = str(uuid.uuid4())
+        session_id = str(uuid.uuid4())
+        
+        agent_doc = {
+            "id": agent_id,
+            "user_id": user["id"],
+            "description": request.description,
+            "generated_prompt": "",  # Will be filled after finalize
+            "master_prompt_version": master_prompt_doc["version"],
+            "score": None,
+            "metadata": {
+                "session_id": session_id,
+                "questions": questions,
+                "status": "in_progress"
+            },
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        await db.agents.insert_one(agent_doc)
+        
+        logger.info(f"Started agent creation: {agent_id}")
+        
+        return {
+            "agent_id": agent_id,
+            "questions": questions,
+            "session_id": session_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error starting agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/agent/{agent_id}/refine", response_model=RefineAgentResponse)
+async def refine_agent(agent_id: str, request: RefineAgentRequest, http_request: Request):
+    """
+    Step 2: Refine agent concept based on answers.
+    Generate concept map and optional follow-up questions.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Get agent document
+        agent_doc = await db.agents.find_one({"id": agent_id, "user_id": user["id"]})
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Get Master Prompt
+        master_prompt_doc = await db.master_prompts.find_one({"status": "active"})
+        master_prompt = master_prompt_doc["content"]
+        
+        # Get questions from metadata
+        questions = agent_doc.get("metadata", {}).get("questions", [])
+        
+        # Refine concept
+        concepts, follow_up, tokens_used = await refine_agent_concept(
+            agent_doc["description"],
+            questions,
+            request.answers,
+            master_prompt
+        )
+        
+        # Update agent metadata
+        await db.agents.update_one(
+            {"id": agent_id},
+            {"$set": {
+                "metadata.answers": request.answers,
+                "metadata.concepts": concepts,
+                "metadata.follow_up_questions": follow_up
+            }}
+        )
+        
+        logger.info(f"Refined agent: {agent_id}")
+        
+        return {
+            "concepts": concepts,
+            "follow_up_questions": follow_up
+        }
+        
+    except Exception as e:
+        logger.error(f"Error refining agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/agent/{agent_id}/finalize", response_model=FinalizeAgentResponse)
+async def finalize_agent(agent_id: str, request: FinalizeAgentRequest, http_request: Request):
+    """
+    Step 3: Finalize agent and generate the complete prompt.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        # Get agent document
+        agent_doc = await db.agents.find_one({"id": agent_id, "user_id": user["id"]})
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Get Master Prompt
+        master_prompt_doc = await db.master_prompts.find_one({"status": "active"})
+        master_prompt = master_prompt_doc["content"]
+        
+        # Build conversation history
+        metadata = agent_doc.get("metadata", {})
+        questions = metadata.get("questions", [])
+        answers = metadata.get("answers", [])
+        
+        conversation_history = []
+        for q, a in zip(questions, answers):
+            conversation_history.append({"role": "assistant", "content": q})
+            conversation_history.append({"role": "user", "content": a})
+        
+        # Generate final prompt
+        final_prompt, tokens_used = await finalize_agent_prompt(
+            agent_doc["description"],
+            conversation_history,
+            master_prompt
+        )
+        
+        # Update agent with final prompt
+        await db.agents.update_one(
+            {"id": agent_id},
+            {"$set": {
+                "generated_prompt": final_prompt,
+                "metadata.status": "completed"
+            }}
+        )
+        
+        # Deduct tokens from user balance
+        estimated_tokens = tokens_used
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"omega_tokens_balance": -estimated_tokens}}
+        )
+        
+        # Log token transaction
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "amount": -estimated_tokens,
+            "balance_after": user.get("omega_tokens_balance", 0) - estimated_tokens,
+            "transaction_type": "usage",
+            "description": f"Agent generation: {agent_id}",
+            "openai_tokens_used": tokens_used,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.token_transactions.insert_one(transaction)
+        
+        logger.info(f"Finalized agent: {agent_id}, tokens: {tokens_used}")
+        
+        return {
+            "agent_prompt_markdown": final_prompt,
+            "tokens_used": tokens_used,
+            "agent_id": agent_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error finalizing agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/agent/{agent_id}", response_model=AgentResponse)
+async def get_agent(agent_id: str, http_request: Request):
+    """
+    Get agent details by ID.
+    """
+    user = await require_auth(http_request)
+    
+    try:
+        agent_doc = await db.agents.find_one({"id": agent_id, "user_id": user["id"]})
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        return {
+            "id": agent_doc["id"],
+            "description": agent_doc["description"],
+            "generated_prompt": agent_doc["generated_prompt"],
+            "master_prompt_version": agent_doc["master_prompt_version"],
+            "score": agent_doc.get("score"),
+            "created_at": agent_doc["created_at"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Admin Monitoring Endpoints
+
+@api_router.get("/admin/agents")
+async def admin_get_agents(
+    sort: str = "created_at",
+    limit: int = 50,
+    http_request: Request = None
+):
+    """
+    Admin: Get all agents with scores and versions.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        sort_direction = -1 if sort == "created_at" else 1
+        
+        agents_cursor = db.agents.find().sort(sort, sort_direction).limit(limit)
+        agents = await agents_cursor.to_list(length=limit)
+        
+        return {"agents": agents, "count": len(agents)}
+        
+    except Exception as e:
+        logger.error(f"Error fetching agents: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/master-prompts")
+async def admin_get_master_prompts(http_request: Request):
+    """
+    Admin: Get all Master Prompt versions.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        prompts_cursor = db.master_prompts.find().sort("created_at", -1)
+        prompts = await prompts_cursor.to_list(length=100)
+        
+        return {"master_prompts": prompts, "count": len(prompts)}
+        
+    except Exception as e:
+        logger.error(f"Error fetching master prompts: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/master-prompts/approve")
+async def admin_approve_master_prompt(request: MasterPromptApproveRequest, http_request: Request):
+    """
+    Admin: Approve a pending Master Prompt and set it as active.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Find the prompt to approve
+        prompt_doc = await db.master_prompts.find_one({"version": request.version, "status": "pending"})
+        if not prompt_doc:
+            raise HTTPException(status_code=404, detail="Pending prompt not found")
+        
+        # Archive current active prompt
+        await db.master_prompts.update_many(
+            {"status": "active"},
+            {"$set": {"status": "archived"}}
+        )
+        
+        # Activate the new prompt
+        await db.master_prompts.update_one(
+            {"version": request.version},
+            {"$set": {
+                "status": "active",
+                "approved_at": datetime.now(timezone.utc),
+                "approved_by": user["id"]
+            }}
+        )
+        
+        logger.info(f"Approved Master Prompt: {request.version}")
+        
+        return {"message": f"Master Prompt {request.version} approved and activated"}
+        
+    except Exception as e:
+        logger.error(f"Error approving prompt: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/learning-summaries")
+async def admin_get_learning_summaries(http_request: Request):
+    """
+    Admin: Get all learning summaries from nightly processes.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        summaries_cursor = db.learning_summaries.find().sort("created_at", -1).limit(30)
+        summaries = await summaries_cursor.to_list(length=30)
+        
+        return {"summaries": summaries, "count": len(summaries)}
+        
+    except Exception as e:
+        logger.error(f"Error fetching summaries: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/metrics", response_model=AdminMetricsResponse)
+async def admin_get_metrics(http_request: Request):
+    """
+    Admin: Get live expo metrics.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        now = datetime.now(timezone.utc)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        yesterday = now - timedelta(hours=24)
+        
+        # Active users (logged in last 24h)
+        active_users = await db.users.count_documents({
+            "last_login_at": {"$gte": yesterday.isoformat()}
+        })
+        
+        # Agents created today
+        agents_today = await db.agents.count_documents({
+            "created_at": {"$gte": today_start}
+        })
+        
+        # Token consumption last 24h
+        transactions_cursor = db.token_transactions.find({
+            "created_at": {"$gte": yesterday},
+            "transaction_type": "usage"
+        })
+        transactions = await transactions_cursor.to_list(length=10000)
+        token_consumption = sum(abs(t.get("amount", 0)) for t in transactions)
+        
+        # Top keywords from feedbacks (last 7 days)
+        week_ago = now - timedelta(days=7)
+        feedbacks_cursor = db.feedbacks.find({
+            "created_at": {"$gte": week_ago}
+        })
+        feedbacks = await feedbacks_cursor.to_list(length=1000)
+        
+        keyword_counts = {}
+        for feedback in feedbacks:
+            for keyword in feedback.get("keywords", []):
+                keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+        
+        top_keywords = [
+            {"keyword": k, "count": v}
+            for k, v in sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        ]
+        
+        return {
+            "active_users": active_users,
+            "agents_created_today": agents_today,
+            "token_consumption_24h": token_consumption,
+            "top_keywords": top_keywords
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/trigger-learning")
+async def admin_trigger_learning(http_request: Request):
+    """
+    Admin: Manually trigger the learning loop (for testing).
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Run learning loop in background
+        asyncio.create_task(process_learning_loop())
+        
+        return {"message": "Learning loop triggered successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error triggering learning loop: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
