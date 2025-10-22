@@ -2977,18 +2977,19 @@ async def finalize_agent(agent_id: str, request: FinalizeAgentRequest, http_requ
             conversation_history.append({"role": "user", "content": a})
         
         # Generate final prompt
-        final_prompt, tokens_used = await finalize_agent_prompt(
+        final_prompt, short_description, tokens_used = await finalize_agent_prompt(
             agent_doc["description"],
             conversation_history,
             master_prompt
         )
         
-        # Update agent with final prompt
+        # Update agent with final prompt and short description
         await db.agents.update_one(
             {"id": agent_id},
             {"$set": {
                 "generated_prompt": final_prompt,
-                "metadata.status": "completed"
+                "metadata.status": "completed",
+                "metadata.short_description": short_description
             }}
         )
         
