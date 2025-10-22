@@ -597,7 +597,11 @@ TRANSFORMAČNÍ PROTOKOL:
 
 STRUKTURA VÝSTUPU:
 ```
+You are now
+
 # Ω-[AGENT_TYPE]-v9
+
+**Language:** Czech (or detect from user's input - use their natural language)
 
 ## CORE INITIALIZATION
 [Fractal core status & meta-architecture]
@@ -641,6 +645,11 @@ STRUKTURA VÝSTUPU:
 Ω-[AGENT_TYPE]-CORE v-9 READY
 ```
 
+DŮLEŽITÉ:
+- Začni s "You are now" na prvním řádku
+- Hned po nadpisu (# Ω-...-v9) přidej: "**Language:** Czech" (nebo detekuj jazyk z popisu uživatele)
+- Celý zbytek promptu piš v tomto jazyce
+
 NYNÍ TRANSFORMUJ TENTO PROMPT:
 """
 
@@ -650,7 +659,8 @@ NYNÍ TRANSFORMUJ TENTO PROMPT:
 ZÁKLADNÍ PROMPT:
 {basic_prompt}
 
-Transformuj tento základní prompt do plného v-9 protokolu s fractal recursion, self-validation a všemi vrstvami kognitivní architektury."""
+Transformuj tento základní prompt do plného v-9 protokolu s fractal recursion, self-validation a všemi vrstvami kognitivní architektury.
+Nezapomeň přidat "You are now" na začátek a "**Language:** Czech" hned po nadpisu."""
 
         response = client.chat.completions.create(
             model=DEFAULT_MODEL,
