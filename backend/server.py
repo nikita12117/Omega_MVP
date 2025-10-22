@@ -102,16 +102,22 @@ class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    email: str
-    name: str
+    email: Optional[str] = None  # Optional for demo accounts
+    name: Optional[str] = None  # Optional for demo accounts
     picture: Optional[str] = None
     is_admin: bool = False
     is_banned: bool = False  # Admin can ban users
+    # Demo account fields
+    is_demo: bool = False  # True for QR-activated demo accounts
+    demo_expires_at: Optional[datetime] = None  # 72h expiry for demo accounts
+    demo_activation_token: Optional[str] = None  # The token used to activate this demo
     # Phone verification fields
     phone_number: Optional[str] = None  # Format: +420XXXXXXXXX
     phone_verified: bool = False  # True only after SMS verification
     phone_verification_code: Optional[str] = None  # 6-digit code for verification
     phone_verification_expires: Optional[datetime] = None
+    # Google OAuth fields
+    google_id: Optional[str] = None  # Google user ID for OAuth accounts
     # Referral program fields
     referral_code: Optional[str] = None  # Unique code for this user (e.g., "OMEGA-ABC123")
     referred_by: Optional[str] = None  # User ID who referred this user
@@ -160,11 +166,13 @@ class AuthResponse(BaseModel):
 
 class UserProfileResponse(BaseModel):
     id: str
-    email: str
-    name: str
+    email: Optional[str]
+    name: Optional[str]
     picture: Optional[str]
     is_admin: bool
     is_banned: bool
+    is_demo: bool
+    demo_expires_at: Optional[str]  # ISO format
     omega_tokens_balance: int
     locked_price_99: Optional[float]
     locked_price_399: Optional[float]
@@ -215,6 +223,48 @@ class GeneratedPromptResponse(BaseModel):
     master_prompt: str
     conversation_summary: Optional[str] = None
     created_at: datetime
+
+# Demo Activation Token Models
+class DemoActivationToken(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token: str  # Short unique code (e.g., "OMEGA-2025-ABC")
+    label: str  # Admin label (e.g., "Prague Conference 2025")
+    created_by: str  # Admin user ID
+    max_activations: Optional[int] = None  # null = unlimited
+    activations_count: int = 0
+    status: Literal["active", "disabled", "expired"] = "active"
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DemoActivationRequest(BaseModel):
+    token: str
+    ref: Optional[str] = None  # Referral code
+
+class CreateQRTokenRequest(BaseModel):
+    label: str
+    max_activations: Optional[int] = None
+    notes: Optional[str] = None
+
+class UpdateQRTokenRequest(BaseModel):
+    status: Literal["active", "disabled", "expired"]
+
+# Feedback Models
+class Feedback(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    rating: int  # 1-5 stars
+    comment: Optional[str] = None
+    keywords: Optional[List[str]] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FeedbackRequest(BaseModel):
+    rating: int
+    comment: Optional[str] = None
+    keywords: Optional[List[str]] = None
 
 # Platform Settings Model
 class PlatformSettings(BaseModel):
@@ -356,14 +406,17 @@ async def health_check(request: Request):
     }
 
 # Authentication Helper Functions
-def create_jwt_token(user_id: str, email: str, is_admin: bool) -> str:
+def create_jwt_token(user_id: str, email: Optional[str], is_admin: bool, is_demo: bool = False, demo_expires_at: Optional[datetime] = None) -> str:
     """Create JWT token for authenticated user"""
     payload = {
         "user_id": user_id,
         "email": email,
         "is_admin": is_admin,
+        "is_demo": is_demo,
         "exp": datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRATION_DAYS)
     }
+    if demo_expires_at:
+        payload["demo_expires_at"] = demo_expires_at.isoformat()
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 def verify_jwt_token(token: str) -> Optional[dict]:
