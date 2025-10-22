@@ -43,6 +43,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/education" replace />} />
             <Route path="/education" element={<Education />} />
+            <Route path="/demo/activate/:token" element={<DemoActivate />} />
             <Route path="/login" element={<Login />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route 
