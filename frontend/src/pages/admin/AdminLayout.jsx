@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Users, Settings, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, Menu, Bot, MessageSquare, Brain, Activity, GitCommit, Lightbulb, QrCode } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function AdminLayout() {
@@ -10,6 +10,13 @@ export default function AdminLayout() {
   
   const nav = [
     { label: 'Přehled', href: '/admin/overview', icon: LayoutDashboard, testid: 'sidebar-overview-link' },
+    { label: 'Agent Monitor', href: '/admin/agents', icon: Bot, testid: 'sidebar-agents-link' },
+    { label: 'Learning Loop', href: '/admin/learning', icon: Brain, testid: 'sidebar-learning-link' },
+    { label: 'Live Monitor', href: '/admin/live', icon: Activity, testid: 'sidebar-live-link' },
+    { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare, testid: 'sidebar-feedback-link' },
+    { label: 'Version Ledger', href: '/admin/versions', icon: GitCommit, testid: 'sidebar-versions-link' },
+    { label: 'Meta Insights', href: '/admin/insights', icon: Lightbulb, testid: 'sidebar-insights-link' },
+    { label: 'QR Tokeny', href: '/admin/qr', icon: QrCode, testid: 'sidebar-qr-link' },
     { label: 'Uživatelé', href: '/admin/users', icon: Users, testid: 'sidebar-users-link' },
     { label: 'Nastavení Platformy', href: '/admin/settings', icon: Settings, testid: 'sidebar-settings-link' }
   ];

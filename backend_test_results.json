@@ -1,0 +1,90 @@
+[
+  {
+    "endpoint": "/auth/admin/login",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Admin login successful. Token received. User: Admin",
+    "timestamp": "2025-10-22T15:51:39.315091"
+  },
+  {
+    "endpoint": "/admin/master-prompts",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved 2 master prompts. \u03a9_v1.0 exists: True",
+    "timestamp": "2025-10-22T15:51:39.358591"
+  },
+  {
+    "endpoint": "/admin/learning-summaries",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved 1 learning summaries",
+    "timestamp": "2025-10-22T15:51:39.397546"
+  },
+  {
+    "endpoint": "/admin/agents/analytics",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved 16 agents. Total: 16, v9: 0",
+    "timestamp": "2025-10-22T15:51:39.438950"
+  },
+  {
+    "endpoint": "/admin/agents/analytics?status_filter=v9_only",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved 0 v9 agents",
+    "timestamp": "2025-10-22T15:51:39.474822"
+  },
+  {
+    "endpoint": "/admin/feedback/analytics",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Retrieved feedback analytics. Total: 0, Avg: 0",
+    "timestamp": "2025-10-22T15:51:39.510946"
+  },
+  {
+    "endpoint": "/admin/metrics",
+    "method": "GET",
+    "status_code": 200,
+    "success": true,
+    "message": "Live metrics: Active users: 4, Agents today: 16, Tokens: 26116",
+    "timestamp": "2025-10-22T15:51:39.547365"
+  },
+  {
+    "endpoint": "/admin/trigger-learning",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Learning loop triggered: Learning loop triggered successfully",
+    "timestamp": "2025-10-22T15:51:39.583187"
+  },
+  {
+    "endpoint": "/admin/qr-tokens",
+    "method": "GET",
+    "status_code": 0,
+    "success": false,
+    "message": "Exception: HTTPSConnectionPool(host='agent-forge-49.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)",
+    "timestamp": "2025-10-22T15:52:09.642029"
+  },
+  {
+    "endpoint": "/admin/master-prompts/reject",
+    "method": "POST",
+    "status_code": 200,
+    "success": true,
+    "message": "Rejected master prompt: \u03a9_v1.1",
+    "timestamp": "2025-10-22T15:52:17.911092"
+  },
+  {
+    "endpoint": "/admin/metrics (no auth)",
+    "method": "GET",
+    "status_code": 401,
+    "success": true,
+    "message": "Correctly rejected unauthorized request",
+    "timestamp": "2025-10-22T15:52:17.954308"
+  }
+]

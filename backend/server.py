@@ -2000,12 +2000,12 @@ async def get_admin_overview(request: Request):
         active_24h = sum(
             1 for user in users 
             if user.get("last_login_at") and 
-            datetime.fromisoformat(user["last_login_at"]) >= now - timedelta(hours=24)
+            (user["last_login_at"] if isinstance(user["last_login_at"], datetime) else datetime.fromisoformat(user["last_login_at"])) >= now - timedelta(hours=24)
         )
         active_7d = sum(
             1 for user in users 
             if user.get("last_login_at") and 
-            datetime.fromisoformat(user["last_login_at"]) >= now - timedelta(days=7)
+            (user["last_login_at"] if isinstance(user["last_login_at"], datetime) else datetime.fromisoformat(user["last_login_at"])) >= now - timedelta(days=7)
         )
         
         # Token consumption analytics
@@ -2050,7 +2050,8 @@ async def get_admin_overview(request: Request):
         token_by_day = defaultdict(int)
         for trans in usage_transactions:
             if trans.get("created_at"):
-                day = datetime.fromisoformat(trans["created_at"]).date().isoformat()
+                created_at = trans["created_at"] if isinstance(trans["created_at"], datetime) else datetime.fromisoformat(trans["created_at"])
+                day = created_at.date().isoformat()
                 token_by_day[day] += trans["openai_tokens_used"]
         
         # Convert to sorted list
@@ -3394,6 +3395,157 @@ async def admin_trigger_learning(http_request: Request):
         
     except Exception as e:
         logger.error(f"Error triggering learning loop: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/master-prompts/reject")
+async def admin_reject_master_prompt(request: MasterPromptApproveRequest, http_request: Request):
+    """
+    Admin: Reject a pending Master Prompt.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Find the prompt to reject
+        prompt_doc = await db.master_prompts.find_one({"version": request.version, "status": "pending"})
+        if not prompt_doc:
+            raise HTTPException(status_code=404, detail="Pending prompt not found")
+        
+        # Mark as rejected
+        await db.master_prompts.update_one(
+            {"version": request.version},
+            {"$set": {
+                "status": "rejected",
+                "approved_at": datetime.now(timezone.utc),
+                "approved_by": user["id"]
+            }}
+        )
+        
+        logger.info(f"Rejected Master Prompt: {request.version}")
+        
+        return {"message": f"Master Prompt {request.version} rejected"}
+        
+    except Exception as e:
+        logger.error(f"Error rejecting prompt: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/agents/analytics")
+async def admin_get_agents_analytics(
+    http_request: Request,
+    limit: int = 100,
+    status_filter: Optional[str] = None
+):
+    """
+    Admin: Get all agents with analytics data.
+    Optional filter by status (v1_only, v9_only, both)
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Build query based on filter
+        query = {}
+        if status_filter == "v9_only":
+            query["v9_prompt"] = {"$exists": True}
+        elif status_filter == "v1_only":
+            query["v9_prompt"] = {"$exists": False}
+        
+        # Get agents
+        agents_cursor = db.agents.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
+        agents = await agents_cursor.to_list(length=limit)
+        
+        # Enrich with user data
+        for agent in agents:
+            user_doc = await db.users.find_one({"id": agent["user_id"]}, {"_id": 0, "email": 1, "name": 1})
+            if user_doc:
+                agent["user_email"] = user_doc.get("email", "Unknown")
+                agent["user_name"] = user_doc.get("name", "Unknown")
+        
+        # Calculate statistics
+        total_agents = await db.agents.count_documents({})
+        v9_count = await db.agents.count_documents({"v9_prompt": {"$exists": True}})
+        
+        return {
+            "agents": agents,
+            "count": len(agents),
+            "total_agents": total_agents,
+            "v9_count": v9_count,
+            "v1_only_count": total_agents - v9_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching agents analytics: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/feedback/analytics")
+async def admin_get_feedback_analytics(http_request: Request):
+    """
+    Admin: Get feedback analytics including sentiment trends and keyword analysis.
+    """
+    user = await require_auth(http_request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        now = datetime.now(timezone.utc)
+        last_30_days = now - timedelta(days=30)
+        
+        # Get all feedbacks from last 30 days
+        feedbacks_cursor = db.feedbacks.find({
+            "created_at": {"$gte": last_30_days}
+        })
+        feedbacks = await feedbacks_cursor.to_list(length=10000)
+        
+        # Calculate rating distribution
+        rating_distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        keyword_counts = {}
+        daily_ratings = {}
+        
+        for feedback in feedbacks:
+            rating = feedback.get("rating", 3)
+            rating_distribution[rating] += 1
+            
+            # Keywords
+            for keyword in feedback.get("keywords", []):
+                keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+            
+            # Daily aggregation
+            date_str = feedback["created_at"].strftime("%Y-%m-%d") if isinstance(feedback["created_at"], datetime) else "Unknown"
+            if date_str not in daily_ratings:
+                daily_ratings[date_str] = []
+            daily_ratings[date_str].append(rating)
+        
+        # Calculate averages per day
+        daily_averages = [
+            {"date": date, "average_rating": sum(ratings) / len(ratings)}
+            for date, ratings in sorted(daily_ratings.items())
+        ]
+        
+        # Top keywords
+        top_keywords = [
+            {"keyword": k, "count": v}
+            for k, v in sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:20]
+        ]
+        
+        # Overall statistics
+        total_feedbacks = len(feedbacks)
+        avg_rating = sum(f.get("rating", 3) for f in feedbacks) / total_feedbacks if total_feedbacks > 0 else 0
+        
+        return {
+            "total_feedbacks": total_feedbacks,
+            "average_rating": round(avg_rating, 2),
+            "rating_distribution": rating_distribution,
+            "daily_trends": daily_averages,
+            "top_keywords": top_keywords
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching feedback analytics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

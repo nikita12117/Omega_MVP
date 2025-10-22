@@ -19,6 +19,13 @@ import AdminLayout from '@/pages/admin/AdminLayout';
 import Overview from '@/pages/admin/Overview';
 import Users from '@/pages/admin/Users';
 import Settings from '@/pages/admin/Settings';
+import AgentMonitor from '@/pages/admin/AgentMonitor';
+import LearningLoopConsole from '@/pages/admin/LearningLoopConsole';
+import LiveMonitor from '@/pages/admin/LiveMonitor';
+import FeedbackVisualizer from '@/pages/admin/FeedbackVisualizer';
+import VersionLedger from '@/pages/admin/VersionLedger';
+import MetaInsights from '@/pages/admin/MetaInsights';
+import QRManagement from '@/pages/admin/QRManagement';
 
 // Admin Guard Component
 function AdminRoute({ children }) {
@@ -77,6 +84,13 @@ function App() {
             >
               <Route index element={<Navigate to="/admin/overview" replace />} />
               <Route path="overview" element={<Overview />} />
+              <Route path="agents" element={<AgentMonitor />} />
+              <Route path="learning" element={<LearningLoopConsole />} />
+              <Route path="live" element={<LiveMonitor />} />
+              <Route path="feedback" element={<FeedbackVisualizer />} />
+              <Route path="versions" element={<VersionLedger />} />
+              <Route path="insights" element={<MetaInsights />} />
+              <Route path="qr" element={<QRManagement />} />
               <Route path="users" element={<Users />} />
               <Route path="settings" element={<Settings />} />
             </Route>
