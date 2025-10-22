@@ -1,58 +1,46 @@
 [
   {
-    "content": "Explore existing backend structure (server.py, MongoDB collections, auth system)",
-    "status": "completed"
+    "content": "Create DemoActivate.jsx page component with token extraction and API call",
+    "status": "in_progress"
   },
   {
-    "content": "Update JWT creation to include is_demo and demo_expires_at claims",
-    "status": "completed"
+    "content": "Add /demo/activate/:token route to App.js",
+    "status": "pending"
   },
   {
-    "content": "Update User model with is_demo, demo_expires_at, and google_id fields",
-    "status": "completed"
+    "content": "Create DemoActivationPrompt component (unauthenticated state)",
+    "status": "pending"
   },
   {
-    "content": "Create DemoActivationToken and Feedback Pydantic models",
-    "status": "completed"
+    "content": "Create DemoExpiredPanel component (expired demo state)",
+    "status": "pending"
   },
   {
-    "content": "Implement POST /api/demo/activate endpoint with token validation, user creation, JWT issuance",
-    "status": "completed"
+    "content": "Update Demo.jsx with complete gating logic (demo expiry, phone verification, admin bypass)",
+    "status": "pending"
   },
   {
-    "content": "Update GET /api/auth/me endpoint to return is_demo, demo_expires_at, tokens_balance",
-    "status": "completed"
+    "content": "Create FeedbackDialog component (5-star rating, comment, keywords)",
+    "status": "pending"
   },
   {
-    "content": "Implement POST /api/feedback endpoint (authenticated)",
-    "status": "completed"
+    "content": "Create GoogleUpgradeDialog component (benefits list, upgrade CTA)",
+    "status": "pending"
   },
   {
-    "content": "Implement POST /api/auth/google/upgrade endpoint for demo->full account conversion",
-    "status": "completed"
+    "content": "Update ChatInterface to show feedback dialog after successful generation",
+    "status": "pending"
   },
   {
-    "content": "Create demo expiry middleware for /api/generate/* endpoints",
-    "status": "completed"
+    "content": "Add demo expiry countdown timer to Demo page header",
+    "status": "pending"
   },
   {
-    "content": "Implement POST /api/admin/qr-tokens (generate QR token)",
-    "status": "completed"
+    "content": "Handle 401 demo_expired and 403 phone_verification_required errors in axios interceptor",
+    "status": "pending"
   },
   {
-    "content": "Implement GET /api/admin/qr-tokens (list all tokens with stats)",
-    "status": "completed"
-  },
-  {
-    "content": "Implement PUT /api/admin/qr-tokens/{id} (enable/disable token)",
-    "status": "completed"
-  },
-  {
-    "content": "Run Python linting on server.py to check for errors",
-    "status": "completed"
-  },
-  {
-    "content": "Test demo activation flow with curl",
-    "status": "completed"
+    "content": "Test demo activation flow end-to-end with screenshot verification",
+    "status": "pending"
   }
 ]
