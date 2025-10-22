@@ -29,6 +29,7 @@ import OmegaLogo from '@/components/OmegaLogo';
 import DemoActivationPrompt from '@/components/demo/DemoActivationPrompt';
 import DemoExpiredPanel from '@/components/demo/DemoExpiredPanel';
 import PhoneVerificationModal from '@/components/phone/PhoneVerificationModal';
+import V9TransformButton from '@/components/V9TransformButton';
 
 /**
  * Ω-KOMPRESNÍ ROVNICE - Agent Creator
