@@ -135,7 +135,7 @@ const MyAgents = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoadingUser || isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0f1d] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
