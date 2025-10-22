@@ -114,6 +114,7 @@ export default function Demo() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   
@@ -128,7 +129,22 @@ export default function Demo() {
     if (tokens) {
       setOmegaTokens(parseInt(tokens));
     }
+    
+    // Mark loading complete
+    setIsLoadingUser(false);
   }, []);
+
+  // Show loading spinner while checking user state
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <OmegaLogo size={64} className="animate-pulse-glow mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Gating logic: Check authentication and demo expiry
   if (!user) {
