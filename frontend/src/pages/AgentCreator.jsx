@@ -215,7 +215,26 @@ const AgentCreator = () => {
   // Download as markdown
   const handleDownload = () => {
     const promptToDownload = isV9Transformed ? v9Prompt : finalPrompt;
-    const filename = isV9Transformed ? `omega-agent-v9-${agentId}.md` : `omega-agent-${agentId}.md`;
+    
+    // Extract agent name from the prompt
+    let filename = 'omega-agent.md';
+    const lines = promptToDownload.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('#') && line.includes('Ω-')) {
+        // Extract name between Ω- and v1.0 or -v9
+        const cleanName = line
+          .replace(/[#*_`]/g, '')
+          .replace(/Ω-/g, '')
+          .replace(/-v9/g, '')
+          .replace(/v\d+\.\d+/g, '')
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-');
+        
+        filename = isV9Transformed ? `${cleanName}-v9.md` : `${cleanName}.md`;
+        break;
+      }
+    }
     
     const blob = new Blob([promptToDownload], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
