@@ -1,11 +1,11 @@
 [
   {
     "content": "Install required packages: framer-motion, react-markdown, remark-gfm, rehype-raw, react-syntax-highlighter",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Apply Ω-Aurora design tokens to global CSS and Tailwind config (colors, typography, shadows, gradients)",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Create OmegaLogo component (SVG with neural pathways, teal accent gradient)",
