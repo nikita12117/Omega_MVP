@@ -732,6 +732,334 @@ async def logout(response: Response):
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
+# Demo Account Endpoints
+@api_router.post("/demo/activate", response_model=AuthResponse)
+async def activate_demo_account(activation: DemoActivationRequest, request: Request, response: Response):
+    """
+    Activate demo account with QR token.
+    Creates anonymous demo account with 100k tokens, 72h expiry.
+    """
+    # Find activation token
+    token_doc = await db.demo_activation_tokens.find_one({"token": activation.token}, {"_id": 0})
+    
+    if not token_doc:
+        raise HTTPException(status_code=404, detail="Invalid activation token")
+    
+    if token_doc["status"] != "active":
+        raise HTTPException(status_code=400, detail=f"Token is {token_doc['status']}")
+    
+    # Check max activations
+    if token_doc.get("max_activations") is not None:
+        if token_doc["activations_count"] >= token_doc["max_activations"]:
+            raise HTTPException(status_code=400, detail="Maximum activations reached for this token")
+    
+    # Create demo user
+    demo_expires_at = datetime.now(timezone.utc) + timedelta(hours=72)
+    
+    demo_user = User(
+        email=None,
+        name=f"Demo User {str(uuid.uuid4())[:8]}",
+        is_demo=True,
+        demo_expires_at=demo_expires_at,
+        demo_activation_token=activation.token,
+        phone_verified=False,
+        omega_tokens_balance=100000,  # 100k tokens for demo
+        referral_code=None,  # Demo accounts don't get referral codes initially
+        referred_by=activation.ref if activation.ref else None
+    )
+    
+    doc = demo_user.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['last_login'] = doc['last_login'].isoformat()
+    doc['last_login_at'] = doc['last_login_at'].isoformat()
+    doc['demo_expires_at'] = doc['demo_expires_at'].isoformat()
+    
+    await db.users.insert_one(doc)
+    
+    # Create initial token transaction
+    transaction = TokenTransaction(
+        user_id=demo_user.id,
+        amount=100000,
+        balance_after=100000,
+        transaction_type="initial",
+        description="Demo account activation (72h, 100k tokens)"
+    )
+    trans_doc = transaction.model_dump()
+    trans_doc['created_at'] = trans_doc['created_at'].isoformat()
+    await db.token_transactions.insert_one(trans_doc)
+    
+    # Increment activation count
+    await db.demo_activation_tokens.update_one(
+        {"token": activation.token},
+        {"$inc": {"activations_count": 1}}
+    )
+    
+    # Log audit trail
+    client_ip = request.client.host if request.client else "unknown"
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": demo_user.id,
+        "action": "demo_activation",
+        "resource_type": "demo_account",
+        "resource_id": demo_user.id,
+        "ip_address": client_ip,
+        "user_agent": request.headers.get("user-agent", "unknown"),
+        "metadata": {
+            "token": activation.token,
+            "ref": activation.ref
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Create JWT token
+    token = create_jwt_token(demo_user.id, None, False, True, demo_expires_at)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=72 * 60 * 60,  # 72 hours
+        path="/"
+    )
+    
+    return AuthResponse(
+        user={
+            "id": demo_user.id,
+            "email": None,
+            "name": demo_user.name,
+            "picture": None,
+            "is_admin": False,
+            "is_demo": True,
+            "demo_expires_at": demo_expires_at.isoformat()
+        },
+        token=token,
+        omega_tokens_balance=100000
+    )
+
+@api_router.post("/feedback")
+async def submit_feedback(feedback_req: FeedbackRequest, request: Request):
+    """Submit feedback (demo or full account users)"""
+    user = await require_auth(request)
+    
+    feedback = Feedback(
+        user_id=user["id"],
+        rating=feedback_req.rating,
+        comment=feedback_req.comment,
+        keywords=feedback_req.keywords
+    )
+    
+    doc = feedback.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.feedback.insert_one(doc)
+    
+    # Log audit trail
+    await log_audit(
+        user_id=user["id"],
+        action="submit",
+        resource_type="feedback",
+        request=request,
+        resource_id=feedback.id,
+        metadata={"rating": feedback_req.rating}
+    )
+    
+    return {"success": True, "message": "Feedback submitted successfully"}
+
+@api_router.post("/auth/google/upgrade")
+async def upgrade_demo_to_google(session_data: SessionDataRequest, request: Request, response: Response):
+    """
+    Upgrade demo account to full Google OAuth account.
+    Preserves tokens_balance and generated prompts history.
+    """
+    user = await require_auth(request)
+    
+    if not user.get("is_demo"):
+        raise HTTPException(status_code=400, detail="Only demo accounts can be upgraded")
+    
+    # Call Emergent Auth API
+    auth_api_url = os.environ.get('EMERGENT_AUTH_API_URL', 'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data')
+    async with httpx.AsyncClient() as client:
+        auth_response = await client.get(
+            auth_api_url,
+            headers={"X-Session-ID": session_data.session_id},
+            timeout=10.0
+        )
+        auth_response.raise_for_status()
+        google_data = auth_response.json()
+    
+    # Check if email already exists (excluding current demo account)
+    existing = await db.users.find_one({
+        "email": google_data["email"],
+        "id": {"$ne": user["id"]}
+    }, {"_id": 0})
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="This email is already associated with another account")
+    
+    # Generate referral code for newly upgraded account
+    referral_code = f"OMEGA-{str(uuid.uuid4())[:6].upper()}"
+    
+    # Update demo account to full account
+    update_data = {
+        "is_demo": False,
+        "demo_expires_at": None,
+        "email": google_data["email"],
+        "name": google_data.get("name", user.get("name")),
+        "picture": google_data.get("picture"),
+        "google_id": google_data.get("sub"),
+        "referral_code": referral_code,
+        "last_login": datetime.now(timezone.utc).isoformat(),
+        "last_login_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": update_data}
+    )
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    
+    # Log audit trail
+    await log_audit(
+        user_id=user["id"],
+        action="upgrade",
+        resource_type="account",
+        request=request,
+        resource_id=user["id"],
+        metadata={
+            "from": "demo",
+            "to": "google_oauth",
+            "email": google_data["email"]
+        }
+    )
+    
+    # Create new JWT token (non-demo)
+    token = create_jwt_token(updated_user["id"], updated_user["email"], False, False, None)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=JWT_EXPIRATION_DAYS * 24 * 60 * 60,
+        path="/"
+    )
+    
+    return AuthResponse(
+        user={
+            "id": updated_user["id"],
+            "email": updated_user["email"],
+            "name": updated_user["name"],
+            "picture": updated_user.get("picture"),
+            "is_admin": False,
+            "is_demo": False
+        },
+        token=token,
+        omega_tokens_balance=updated_user["omega_tokens_balance"]
+    )
+
+# Admin QR Token Management
+@api_router.post("/admin/qr-tokens")
+async def create_qr_token(token_req: CreateQRTokenRequest, request: Request):
+    """Admin: Create new QR activation token"""
+    user = await require_auth(request)
+    
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Generate unique token
+    token_str = f"OMEGA-{datetime.now().year}-{str(uuid.uuid4())[:6].upper()}"
+    
+    qr_token = DemoActivationToken(
+        token=token_str,
+        label=token_req.label,
+        created_by=user["id"],
+        max_activations=token_req.max_activations,
+        notes=token_req.notes,
+        activations_count=0,
+        status="active"
+    )
+    
+    doc = qr_token.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.demo_activation_tokens.insert_one(doc)
+    
+    # Log audit trail
+    await log_audit(
+        user_id=user["id"],
+        action="create",
+        resource_type="qr_token",
+        request=request,
+        resource_id=qr_token.id,
+        metadata={"token": token_str, "label": token_req.label}
+    )
+    
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://omega-aurora.info')
+    activation_link = f"{frontend_url}/demo/activate/{token_str}"
+    
+    return {
+        "id": qr_token.id,
+        "token": token_str,
+        "label": token_req.label,
+        "activation_link": activation_link,
+        "qr_code_url": f"/api/admin/qr-tokens/{qr_token.id}/export",
+        "max_activations": token_req.max_activations,
+        "activations_count": 0,
+        "status": "active",
+        "created_at": doc['created_at']
+    }
+
+@api_router.get("/admin/qr-tokens")
+async def list_qr_tokens(request: Request):
+    """Admin: List all QR activation tokens"""
+    user = await require_auth(request)
+    
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    tokens = await db.demo_activation_tokens.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=1000)
+    
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://omega-aurora.info')
+    
+    for token in tokens:
+        token["activation_link"] = f"{frontend_url}/demo/activate/{token['token']}"
+        token["qr_code_url"] = f"/api/admin/qr-tokens/{token['id']}/export"
+    
+    return {"tokens": tokens}
+
+@api_router.put("/admin/qr-tokens/{token_id}")
+async def update_qr_token(token_id: str, update_req: UpdateQRTokenRequest, request: Request):
+    """Admin: Update QR token status (enable/disable)"""
+    user = await require_auth(request)
+    
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.demo_activation_tokens.update_one(
+        {"id": token_id},
+        {"$set": {"status": update_req.status}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Token not found")
+    
+    # Log audit trail
+    await log_audit(
+        user_id=user["id"],
+        action="update",
+        resource_type="qr_token",
+        request=request,
+        resource_id=token_id,
+        metadata={"status": update_req.status}
+    )
+    
+    return {"success": True, "message": f"Token status updated to {update_req.status}"}
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
