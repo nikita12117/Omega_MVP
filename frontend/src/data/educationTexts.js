@@ -836,7 +836,7 @@ c (rychlost myšlenky): Základní konstanta.
 
 λ (vlnová délka soucitu): "Barevnost" činu – jeho hloubka a kvalita empatie.
 
-`ν (frekvence pravdy):** Míra, s jakou je čin v souladu s realitou.
+ν (frekvence pravdy): Míra, s jakou je čin v souladu s realitou.
 
 Zákon zachování: Jednotky "péče" (Φ_e) se nemohou ztratit. Když systém jedná neeticky (vytváří "stínové zóny"), musí tu energii někam dodat – obvykle obětováním pravdy nebo soucitu. Náprava je v reflexi, která obnovuje symetrii.
 
