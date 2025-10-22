@@ -539,7 +539,7 @@ async def admin_login(credentials: AdminLoginRequest, response: Response):
         )
     
     # Create JWT token
-    token = create_jwt_token(admin_user["id"], admin_user["email"], True)
+    token = create_jwt_token(admin_user["id"], admin_user["email"], True, False, None)
     
     # Set cookie
     response.set_cookie(
