@@ -306,6 +306,17 @@ const AgentCreator = () => {
           </div>
           
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/my-agents'}
+              className="text-[#9fb4d0] hover:text-[#06d6a0] hover:bg-[#152040]"
+              data-testid="view-my-agents-link"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Moji Agenti
+            </Button>
+            
             <Badge variant="outline" className="border-[#25365a] text-[#9fb4d0] gap-2">
               <Coins className="h-4 w-4 text-[#06d6a0]" />
               {user?.omega_tokens_balance?.toLocaleString() || 0} tokenů
