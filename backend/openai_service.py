@@ -178,9 +178,10 @@ async def finalize_agent_prompt(
     description: str,
     conversation_history: List[Dict],
     master_prompt: str
-) -> Tuple[str, int]:
+) -> Tuple[str, str, int]:
     """
     Generate final agent prompt in markdown format.
+    Also generates a short description of what the agent does.
     
     Args:
         description: Original user description
@@ -188,7 +189,7 @@ async def finalize_agent_prompt(
         master_prompt: Current active Master Prompt
     
     Returns:
-        Tuple of (markdown prompt, tokens_used)
+        Tuple of (markdown prompt, short_description, tokens_used)
     """
     try:
         conversation_text = "\n".join([
@@ -236,6 +237,10 @@ Vygeneruj prompt ve formátu Markdown s následující strukturou:
 
 ---
 
+Na KONCI přidej sekci:
+## AGENT_SUMMARY
+[Krátký popis v 1-2 větách co tento agent dělá - pro náhled]
+
 Vygeneruj kompletní, optimalizovaný prompt NYNÍ.
 """
 
@@ -251,12 +256,18 @@ Vygeneruj kompletní, optimalizovaný prompt NYNÍ.
         markdown_prompt = response.choices[0].message.content
         tokens_used = response.usage.total_tokens
         
+        # Extract short description from AGENT_SUMMARY section
+        short_description = description[:100] + "..."  # Default fallback
+        if "## AGENT_SUMMARY" in markdown_prompt:
+            summary_section = markdown_prompt.split("## AGENT_SUMMARY")[1].split("##")[0].strip()
+            short_description = summary_section[:200]
+        
         logger.info(f"Generated final agent prompt. Tokens: {tokens_used}")
-        return markdown_prompt, tokens_used
+        return markdown_prompt, short_description, tokens_used
         
     except Exception as e:
         logger.error(f"Error finalizing prompt: {str(e)}")
-        return "# Chyba při generování promptu\n\nOmlouváme se, došlo k chybě.", 0
+        return "# Chyba při generování promptu\n\nOmlouváme se, došlo k chybě.", description[:100], 0
 
 
 async def chat_with_agent(
