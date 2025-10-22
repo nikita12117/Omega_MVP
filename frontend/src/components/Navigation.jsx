@@ -14,6 +14,7 @@ const Navigation = () => {
   const navItems = [
     { name: 'Education', path: '/education', icon: BookOpen },
     { name: 'Demo', path: '/demo', icon: Sparkles },
+    ...(user ? [{ name: 'Moji Agenti', path: '/my-agents', icon: FileText }] : []),
     ...(user?.is_admin ? [{ name: 'Dashboard', path: '/admin', icon: LayoutDashboard }] : [])
   ];
 
