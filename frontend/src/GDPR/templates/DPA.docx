@@ -1,0 +1,56 @@
+# Data Processing Agreement (DPA) / Smlouva o zpracování osobních údajů
+
+**Mezi:**  
+Správcem: Omega-Aurora s.r.o., IČO: [doplňte], sídlo: [doplňte]  
+a  
+Zpracovatelem: [Název procesora], IČO: [doplňte], sídlo: [doplňte]
+
+---
+
+## 1. Předmět a účel smlouvy
+- Zpracovatel zpracovává osobní údaje pouze na základě písemných pokynů správce a pouze pro účely poskytování služeb dle hlavní smlouvy.
+- Typy údajů, kategorie subjektů a účel zpracování jsou popsány v příloze 1.
+
+## 2. Povinnosti zpracovatele
+- Zpracovatel zajistí důvěrnost, integritu a dostupnost údajů (Art. 32 GDPR).
+- Přijme technická a organizační opatření (TOM) dle přílohy 2.
+- Umožní správci provádět audity a kontroly.
+- Bez písemného souhlasu správce nezapojí sub-procesory; povinnost uzavřít stejnou smlouvu se sub-procesorem.
+- Po ukončení smlouvy údaje vymaže nebo vrátí správci.
+- Oznámí správci každý incident/porušení zabezpečení bez zbytečného odkladu.
+
+## 3. Povinnosti správce
+- Poskytuje pokyny ke zpracování.
+- Odpovídá za zákonnost zpracování a informování subjektů údajů.
+
+## 4. Mezinárodní přenosy
+- Přenosy mimo EHP pouze na základě SCC nebo rozhodnutí o odpovídající ochraně.
+
+## 5. Odpovědnost a sankce
+- Zpracovatel odpovídá za škodu způsobenou porušením této smlouvy nebo GDPR.
+- Správce má právo na náhradu škody.
+
+## 6. Doba trvání
+- Smlouva platí po dobu trvání hlavní smlouvy.
+
+## 7. Závěrečná ustanovení
+- Smlouva je uzavřena v souladu s Art. 28, 30 GDPR.
+- Změny pouze písemně.
+
+---
+
+### Příloha 1: Specifikace zpracování
+- Kategorie údajů: e-mail, jméno, ID, aktivita, transakce
+- Kategorie subjektů: uživatelé, admini
+- Účel: poskytování SaaS služby, správa účtů, analytika
+
+### Příloha 2: Technická a organizační opatření (TOM)
+- Šifrování, RBAC, audit logy, pseudonymizace, zálohování, pravidelné pen-testy
+
+---
+
+**Poznámka:** Smlouva musí být uzavřena s každým procesorem (Art. 28, 30 GDPR). Pro přenosy mimo EHP použít SCC (Standard Contractual Clauses).
+
+---
+
+**Legal basis:** GDPR Art. 28, 30, 32, SCC.

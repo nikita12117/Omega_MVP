@@ -1,51 +1,105 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import '@/App.css';
+import TopNav from '@/components/layout/TopNav';
+import Footer from '@/components/layout/Footer';
+import CookieConsent from '@/components/gdpr/CookieConsent';
+import Education from '@/pages/Education';
+import Demo from '@/pages/Demo';
+import Login from '@/pages/Login';
+import TokenPurchase from '@/pages/TokenPurchase';
+import Privacy from '@/pages/Privacy';
+import GDPRSettings from '@/pages/GDPRSettings';
+import ErrorPage from '@/pages/ErrorPage';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import AdminLayout from '@/pages/admin/AdminLayout';
+import Overview from '@/pages/admin/Overview';
+import Users from '@/pages/admin/Users';
+import Settings from '@/pages/admin/Settings';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+// Admin Guard Component
+function AdminRoute({ children }) {
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!user.is_admin) {
+    return <Navigate to="/demo" replace />;
+  }
+  
+  return children;
+}
 
 function App() {
   return (
-    <div className="App">
+    <div className="App flex flex-col min-h-screen">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        <TopNav />
+        <div className="flex-1">
+          <Routes>
+            <Route path="/" element={<Navigate to="/education" replace />} />
+            <Route path="/education" element={<Education />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route 
+              path="/demo" 
+              element={
+                <ProtectedRoute>
+                  <Demo />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/tokens" 
+              element={
+                <ProtectedRoute>
+                  <TokenPurchase />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/gdpr-settings" 
+              element={
+                <ProtectedRoute>
+                  <GDPRSettings />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin Routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<Navigate to="/admin/overview" replace />} />
+              <Route path="overview" element={<Overview />} />
+              <Route path="users" element={<Users />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            
+            {/* Catch-all route for 404 */}
+            <Route path="*" element={<ErrorPage error={{message: 'Stránka nebyla nalezena'}} />} />
+          </Routes>
+        </div>
+        <Footer />
+        <CookieConsent />
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              color: 'hsl(var(--foreground))'
+            }
+          }}
+        />
       </BrowserRouter>
     </div>
   );

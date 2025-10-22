@@ -1,0 +1,7 @@
+Účel zpracování,Kategorie subjektů,Kategorie dat,Právní základ (Art. 6),Příjemci (3rd parties),Retence,Bezpečnostní opatření,Přenos mimo EHP,DPIA nutná?,Odůvodnění právního základu
+Registrace a správa účtu,Uživatelé,e-mail, jméno, avatar, ID,Smlouva (b),Google (OAuth), hosting,po dobu účtu,šifrování, RBAC, audit logy,ne,ne,Nutné pro plnění smlouvy
+Správa tokenů a transakcí,Uživatelé,e-mail, ID, transakce, zůstatek,Smlouva (b),OpenAI, hosting,7 let (účetní),šifrování, pseudonymizace,ne,ne,Nutné pro službu a účetnictví
+Generování promptů,Uživatelé,text promptu, historie,Smlouva (b),OpenAI,2 roky,šifrování, přístupová práva,ano (SCC),ne,Nutné pro službu
+Analytika a metriky,Uživatelé, admini,agregovaná aktivita, IP,Oprávněný zájem (f),hosting, analytika,2 roky,anonymizace, omezený přístup,ne,ne,Zlepšení služby, min. zásah
+Marketing (newsletter),Uživatelé (opt-in),e-mail,Souhlas (a),e-mail provider,do odvolání,šifrování, opt-out,ne,ne,Pouze na základě souhlasu
+Admin správa,Admini,e-mail, jméno, aktivita,Oprávněný zájem (f),hosting,po dobu účtu,audit logy, RBAC,ne,ne,Nutné pro správu platformy
