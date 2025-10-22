@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import CookieConsent from '@/components/gdpr/CookieConsent';
 import Education from '@/pages/Education';
 import Demo from '@/pages/Demo';
+import DemoActivate from '@/pages/DemoActivate';
 import Login from '@/pages/Login';
 import TokenPurchase from '@/pages/TokenPurchase';
 import Privacy from '@/pages/Privacy';
