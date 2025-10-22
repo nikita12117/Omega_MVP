@@ -1,34 +1,54 @@
 [
   {
-    "content": "Install required packages: framer-motion, react-markdown, remark-gfm, rehype-raw, react-syntax-highlighter",
-    "status": "completed"
+    "content": "Explore existing backend structure (server.py, MongoDB collections, auth system)",
+    "status": "in_progress"
   },
   {
-    "content": "Apply Ω-Aurora design tokens to global CSS and Tailwind config (colors, typography, shadows, gradients)",
-    "status": "completed"
+    "content": "Update users collection schema with is_demo, demo_expires_at, and google_id fields",
+    "status": "pending"
   },
   {
-    "content": "Create OmegaLogo component (SVG with neural pathways, teal accent gradient)",
-    "status": "completed"
+    "content": "Create demo_activation_tokens MongoDB collection with indexes",
+    "status": "pending"
   },
   {
-    "content": "Build EducationSelector component with Czech content from educationTexts.js (3 docs × 3 perspectives = 9 variants)",
-    "status": "completed"
+    "content": "Create feedback MongoDB collection",
+    "status": "pending"
   },
   {
-    "content": "Create public /education route (no auth required, two-pane layout with tabs + reader)",
-    "status": "completed"
+    "content": "Implement POST /api/demo/activate endpoint with token validation, user creation, JWT issuance",
+    "status": "pending"
   },
   {
-    "content": "Add noise texture overlay and subtle aurora gradient to hero sections (<20% viewport)",
-    "status": "completed"
+    "content": "Update GET /api/auth/me endpoint to return is_demo, demo_expires_at, tokens_balance",
+    "status": "pending"
   },
   {
-    "content": "Update Navigation component with Ω logo and Education/Demo/Dashboard links",
-    "status": "completed"
+    "content": "Implement POST /api/feedback endpoint (authenticated)",
+    "status": "pending"
   },
   {
-    "content": "Verify frontend build and fix any linting errors",
-    "status": "completed"
+    "content": "Implement POST /api/auth/google/upgrade endpoint for demo->full account conversion",
+    "status": "pending"
+  },
+  {
+    "content": "Create demo expiry middleware for /api/generate/* endpoints",
+    "status": "pending"
+  },
+  {
+    "content": "Implement POST /api/admin/qr-tokens (generate QR token)",
+    "status": "pending"
+  },
+  {
+    "content": "Implement GET /api/admin/qr-tokens (list all tokens with stats)",
+    "status": "pending"
+  },
+  {
+    "content": "Implement PUT /api/admin/qr-tokens/{id} (enable/disable token)",
+    "status": "pending"
+  },
+  {
+    "content": "Test demo activation flow with curl",
+    "status": "pending"
   }
 ]
