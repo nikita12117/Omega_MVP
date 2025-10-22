@@ -255,7 +255,7 @@ const MyAgents = () => {
                   <Separator className="mb-4 bg-[#25365a]/50" />
 
                   {/* Metadata */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-xs text-[#9fb4d0]">
                       <Calendar className="h-3 w-3" />
                       <span>{formatDate(agent.created_at)}</span>
@@ -271,6 +271,28 @@ const MyAgents = () => {
                       <span>{agent.master_prompt_version}</span>
                     </div>
                   </div>
+
+                  {/* v-9 Transform Button (only if not already transformed) */}
+                  {!agent.has_v9 && (
+                    <Button
+                      data-testid={`v9-transform-${agent.id}`}
+                      onClick={(e) => handleV9Transform(agent.id, e)}
+                      disabled={transformingAgentId === agent.id}
+                      className="w-full bg-gradient-to-r from-[#1e3a8a] to-[#06d6a0] hover:from-[#2a4aa0] hover:to-[#07f0b8] text-white font-semibold h-9 text-sm"
+                    >
+                      {transformingAgentId === agent.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Transformuji...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="mr-2 h-3 w-3" />
+                          v-9 Transformace
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </Card>
               </motion.div>
             ))}
