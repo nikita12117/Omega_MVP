@@ -200,3 +200,131 @@ Building a self-evolving AI system where:
 - Admin dashboard requires is_admin: true
 - Master Prompt Ω_v1.0 stored in MongoDB
 - Nightly learning loop at 4:20 AM CET
+
+**Current Status:** Admin metrics endpoint working, full dashboard UI pending
+
+### Module 1: Agent Monitor (Pending)
+- [ ] Table with all agents (sortable, filterable)
+- [ ] Agent details modal
+- [ ] Score visualization
+
+### Module 2: Feedback Visualizer (Pending)
+- [ ] Sentiment heatmap (D3.js)
+- [ ] Satisfaction trends (Recharts)
+- [ ] Cluster map
+- [ ] Keyword cloud
+
+### Module 3: Learning Loop Console (Pending)
+- [ ] Master Prompt version list
+- [ ] Diff viewer (side-by-side comparison)
+- [ ] Approve/Reject/Deploy buttons
+- [ ] Pattern learned display
+
+### Module 4: Live Expo Monitor (Pending)
+- [ ] Real-time active users counter
+- [ ] Agents created today
+- [ ] Token consumption graph
+- [ ] Live keyword cloud
+
+### Module 5: Version Ledger (Pending)
+- [ ] Changelog timeline
+- [ ] "What the system learned today" report
+- [ ] Version comparison tool
+
+### Module 6: Meta-Insight Panel (Pending)
+- [ ] AI-generated daily reflection
+- [ ] Refresh/regenerate button
+- [ ] Historical insights archive
+
+---
+
+## Phase 5: Polish & Production (Future)
+
+### Performance Optimization
+- [ ] Database indexes for fast queries
+- [ ] API response caching
+- [ ] Frontend code splitting
+- [ ] Image optimization
+
+### Security Enhancements
+- [ ] Rate limiting on API endpoints
+- [ ] Input sanitization
+- [ ] CSRF protection
+- [ ] API key rotation mechanism
+
+### Monitoring & Observability
+- [ ] Error tracking (Sentry or similar)
+- [ ] Performance monitoring
+- [ ] User analytics
+- [ ] Cost tracking dashboard
+
+### Documentation
+- [ ] User guide (Czech)
+- [ ] API documentation
+- [ ] Admin manual
+- [ ] System architecture diagram
+
+---
+
+## Current System Status
+
+### ✅ Fully Functional Features
+- Agent creation (4-stage workflow)
+- v-9 Protocol transformation
+- Token management & deduction
+- User authentication (admin, demo, Google OAuth)
+- QR code demo accounts (backend complete)
+- Education section
+- Nightly learning loop (scheduled)
+- Master Prompt versioning
+
+### 🔄 Partially Complete
+- Admin dashboard (API endpoints exist, UI pending)
+- Demo account management (backend done, admin UI needed)
+
+### 📋 Pending (Tracked in TODO)
+- **Agent history page for users**
+- **QR token creation UI for admins**
+- Full admin dashboard (6 modules)
+- Advanced analytics & visualizations
+
+---
+
+## Technical Debt & Known Issues
+
+### None Currently - System Stable ✅
+
+All critical bugs fixed:
+- ✅ OpenAI model updated to GPT-4o
+- ✅ OpenRouter integration working
+- ✅ v-9 transformation includes initialization
+- ✅ Frontend compilation clean
+- ✅ Backend linting passed
+
+---
+
+## Notes for Future Development
+
+### Agent History Implementation Notes
+- Consider pagination (20 agents per page)
+- Add infinite scroll or "Load more" button
+- Cache agent list in frontend for performance
+- Allow bulk operations (delete multiple, export all)
+
+### Demo Account UI Notes
+- QR code generation: Use `qrcode` npm package
+- Store QR images temporarily or generate on-the-fly
+- Add analytics: How many times each QR was scanned
+- Email QR codes to event organizers
+
+### Admin Dashboard Priority
+- Focus on Learning Loop Console first (most valuable)
+- Then Agent Monitor (see what's being created)
+- Then Live Expo Monitor (for conference demos)
+- Visualizations can come later
+
+---
+
+**Last Updated:** 2025-01-22 13:55 UTC  
+**Status:** Phase 1 & 2 Complete | v-9 Protocol Active | Ready for Conference  
+**Next Priority:** User Agent History + Admin QR Creation UI
