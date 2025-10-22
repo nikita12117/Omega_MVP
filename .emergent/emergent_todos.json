@@ -4,7 +4,7 @@
     "status": "completed"
   },
   {
-    "content": "Update Demo.jsx to use /api/chat instead of /api/chat (natural conversation)",
+    "content": "Update Demo.jsx to use /api/chat instead of /api/generate (natural conversation)",
     "status": "completed"
   },
   {
@@ -25,6 +25,6 @@
   },
   {
     "content": "Test complete demo flow end-to-end with screenshot verification",
-    "status": "in_progress"
+    "status": "completed"
   }
 ]
