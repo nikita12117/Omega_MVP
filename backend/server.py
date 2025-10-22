@@ -653,7 +653,7 @@ async def process_google_session(session_data: SessionDataRequest, response: Res
             await db.token_transactions.insert_one(trans_doc)
         
         # Create JWT token for shadow account too
-        token = create_jwt_token(user_doc["id"], user_doc["email"], user_doc.get("is_admin", False))
+        token = create_jwt_token(user_doc["id"], user_doc.get("email"), user_doc.get("is_admin", False), False, None)
         
         # Set cookie
         response.set_cookie(
