@@ -3148,7 +3148,7 @@ async def admin_get_learning_summaries(http_request: Request):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        summaries_cursor = db.learning_summaries.find().sort("created_at", -1).limit(30)
+        summaries_cursor = db.learning_summaries.find({}, {"_id": 0}).sort("created_at", -1).limit(30)
         summaries = await summaries_cursor.to_list(length=30)
         
         return {"summaries": summaries, "count": len(summaries)}
