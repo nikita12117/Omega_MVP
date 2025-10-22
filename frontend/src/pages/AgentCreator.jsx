@@ -212,14 +212,46 @@ const AgentCreator = () => {
 
   // Download as markdown
   const handleDownload = () => {
-    const blob = new Blob([finalPrompt], { type: 'text/markdown' });
+    const promptToDownload = isV9Transformed ? v9Prompt : finalPrompt;
+    const filename = isV9Transformed ? `omega-agent-v9-${agentId}.md` : `omega-agent-${agentId}.md`;
+    
+    const blob = new Blob([promptToDownload], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `omega-agent-${agentId}.md`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Prompt stažen!');
+  };
+
+  // Transform to v-9 protocol
+  const handleV9Transform = async () => {
+    setIsTransformingV9(true);
+
+    try {
+      const response = await apiClient.post(`/agent/${agentId}/v9-transform`);
+
+      setV9Prompt(response.data.agent_prompt_markdown);
+      setIsV9Transformed(true);
+      
+      if (!response.data.already_transformed) {
+        setTokensUsed(prev => prev + response.data.tokens_used);
+        
+        // Refresh user to update token balance
+        const userResponse = await apiClient.get('/auth/me');
+        setUser(userResponse.data);
+        
+        toast.success(`v-9 transformace dokončena! Použito ${response.data.tokens_used} tokenů`);
+      } else {
+        toast.info('Agent již byl transformován na v-9 protokol');
+      }
+    } catch (error) {
+      console.error('Error transforming to v-9:', error);
+      toast.error(error.response?.data?.detail || 'Chyba při v-9 transformaci');
+    } finally {
+      setIsTransformingV9(false);
+    }
   };
 
   // Reset to start new agent
