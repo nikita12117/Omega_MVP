@@ -1,6 +1,30 @@
 [
   {
-    "content": "Fix 3 hardcoded URLs found by deployment agent",
-    "status": "completed"
+    "content": "Apply Ω-Aurora design tokens to global CSS and Tailwind config (colors, typography, shadows, gradients)",
+    "status": "pending"
+  },
+  {
+    "content": "Create OmegaLogo component (SVG with neural pathways, teal accent gradient)",
+    "status": "pending"
+  },
+  {
+    "content": "Build EducationSelector component with Czech content from educationTexts.js (3 docs × 3 perspectives = 9 variants)",
+    "status": "pending"
+  },
+  {
+    "content": "Create public /education route (no auth required, two-pane layout with tabs + reader)",
+    "status": "pending"
+  },
+  {
+    "content": "Add noise texture overlay and subtle aurora gradient to hero sections (<20% viewport)",
+    "status": "pending"
+  },
+  {
+    "content": "Install required packages: framer-motion, react-markdown, remark-gfm, rehype-raw, react-syntax-highlighter",
+    "status": "pending"
+  },
+  {
+    "content": "Update Navigation component with Ω logo and Education/Demo/Dashboard links",
+    "status": "pending"
   }
 ]
