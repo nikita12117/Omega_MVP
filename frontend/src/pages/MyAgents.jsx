@@ -125,6 +125,45 @@ const MyAgents = () => {
     toast.success('Prompt stažen!');
   };
 
+  const handleV9Transform = async (agentId, event) => {
+    // Prevent card click from firing
+    event.stopPropagation();
+    
+    setTransformingAgentId(agentId);
+
+    try {
+      const response = await apiClient.post(`/agent/${agentId}/v9-transform`);
+
+      // Update the agent in the list
+      setAgents(prevAgents => 
+        prevAgents.map(agent => 
+          agent.id === agentId 
+            ? {
+                ...agent,
+                has_v9: true,
+                metadata: {
+                  ...agent.metadata,
+                  v9_prompt: response.data.agent_prompt_markdown
+                },
+                total_tokens_used: agent.total_tokens_used + response.data.tokens_used
+              }
+            : agent
+        )
+      );
+      
+      // Refresh user to update token balance
+      const userResponse = await apiClient.get('/auth/me');
+      setUser(userResponse.data);
+      
+      toast.success(`v-9 transformace dokončena! Použito ${response.data.tokens_used} tokenů`);
+    } catch (error) {
+      console.error('Error transforming to v-9:', error);
+      toast.error(error.response?.data?.detail || 'Chyba při v-9 transformaci');
+    } finally {
+      setTransformingAgentId(null);
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('cs-CZ', { 
