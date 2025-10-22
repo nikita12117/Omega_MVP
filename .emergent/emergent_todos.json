@@ -1,34 +1,18 @@
 [
   {
-    "content": "Create DemoActivate.jsx page component with token extraction and API call",
-    "status": "completed"
-  },
-  {
-    "content": "Add /demo/activate/:token route to App.js",
-    "status": "completed"
-  },
-  {
-    "content": "Create DemoActivationPrompt component (unauthenticated state)",
-    "status": "completed"
-  },
-  {
-    "content": "Create DemoExpiredPanel component (expired demo state)",
-    "status": "completed"
-  },
-  {
-    "content": "Create FeedbackDialog component (5-star rating, comment, keywords)",
-    "status": "completed"
-  },
-  {
-    "content": "Create GoogleUpgradeDialog component (benefits list, upgrade CTA)",
-    "status": "completed"
-  },
-  {
     "content": "Update Demo.jsx with complete gating logic (demo expiry, phone verification, admin bypass)",
     "status": "in_progress"
   },
   {
-    "content": "Update ChatInterface to show feedback dialog after successful generation",
+    "content": "Streamline ChatInterface - remove excessive clarifying question loops, make conversation natural",
+    "status": "pending"
+  },
+  {
+    "content": "Integrate FeedbackDialog after successful generation in ChatInterface",
+    "status": "pending"
+  },
+  {
+    "content": "Integrate GoogleUpgradeDialog after feedback submission",
     "status": "pending"
   },
   {
@@ -40,7 +24,7 @@
     "status": "pending"
   },
   {
-    "content": "Test demo activation flow end-to-end with screenshot verification",
+    "content": "Test complete demo flow end-to-end with screenshot verification",
     "status": "pending"
   }
 ]
