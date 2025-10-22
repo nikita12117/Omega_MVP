@@ -264,6 +264,8 @@ const AgentCreator = () => {
     setAnswers([]);
     setConcepts([]);
     setFinalPrompt('');
+    setV9Prompt('');
+    setIsV9Transformed(false);
     setTokensUsed(0);
   };
 
