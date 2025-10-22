@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { Menu, BookOpen, Sparkles, LayoutDashboard, LogOut } from 'lucide-react';
+import { Menu, BookOpen, Sparkles, LayoutDashboard, LogOut, FileText } from 'lucide-react';
 import OmegaLogo from './OmegaLogo';
 import { useAuth } from '../hooks/useAuth';
 
