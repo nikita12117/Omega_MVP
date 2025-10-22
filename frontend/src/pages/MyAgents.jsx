@@ -126,10 +126,7 @@ const MyAgents = () => {
     toast.success('Prompt stažen!');
   };
 
-  const handleV9Transform = async (agentId, event) => {
-    // Prevent card click from firing
-    event.stopPropagation();
-    
+  const handleV9Transform = async (agentId) => {
     setTransformingAgentId(agentId);
 
     try {
