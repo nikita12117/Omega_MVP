@@ -862,7 +862,7 @@ async def submit_feedback(feedback_req: FeedbackRequest, request: Request):
         resource_type="feedback",
         request=request,
         resource_id=feedback.id,
-        metadata={"rating": feedback_req.rating}
+        details={"rating": feedback_req.rating}
     )
     
     return {"success": True, "message": "Feedback submitted successfully"}
@@ -929,7 +929,7 @@ async def upgrade_demo_to_google(session_data: SessionDataRequest, request: Requ
         resource_type="account",
         request=request,
         resource_id=user["id"],
-        metadata={
+        details={
             "from": "demo",
             "to": "google_oauth",
             "email": google_data["email"]
@@ -996,7 +996,7 @@ async def create_qr_token(token_req: CreateQRTokenRequest, request: Request):
         resource_type="qr_token",
         request=request,
         resource_id=qr_token.id,
-        metadata={"token": token_str, "label": token_req.label}
+        details={"token": token_str, "label": token_req.label}
     )
     
     frontend_url = os.environ.get('FRONTEND_URL', 'https://omega-aurora.info')
@@ -1055,7 +1055,7 @@ async def update_qr_token(token_id: str, update_req: UpdateQRTokenRequest, reque
         resource_type="qr_token",
         request=request,
         resource_id=token_id,
-        metadata={"status": update_req.status}
+        details={"status": update_req.status}
     )
     
     return {"success": True, "message": f"Token status updated to {update_req.status}"}
