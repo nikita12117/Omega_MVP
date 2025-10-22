@@ -206,8 +206,9 @@ const AgentCreator = () => {
 
   // Copy to clipboard
   const handleCopy = () => {
-    navigator.clipboard.writeText(finalPrompt);
-    toast.success('Prompt zkopírován do schránky!');
+    const promptToCopy = isV9Transformed ? v9Prompt : finalPrompt;
+    navigator.clipboard.writeText(promptToCopy);
+    toast.success(isV9Transformed ? 'v-9 Protocol zkopírován!' : 'Prompt zkopírován do schránky!');
   };
 
   // Download as markdown
