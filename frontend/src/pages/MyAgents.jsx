@@ -33,6 +33,7 @@ const MyAgents = () => {
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [viewingV9, setViewingV9] = useState(false);
+  const [transformingAgentId, setTransformingAgentId] = useState(null);
 
   // Load user first
   useEffect(() => {
