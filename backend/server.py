@@ -1084,7 +1084,154 @@ async def get_status_checks():
     
     return status_checks
 
-# Omega Agent Generator Endpoint
+# Natural Conversation Endpoint for Master Agent
+@api_router.post("/chat")
+async def chat_with_master(request: dict, http_request: Request):
+    """
+    Natural conversation endpoint for Master Agent.
+    User chats naturally, backend facilitates, detects final prompt output.
+    """
+    # Require authentication
+    user = await require_auth(http_request)
+    
+    # Check demo expiry
+    if user.get("is_demo"):
+        if user.get("demo_expires_at"):
+            expiry_time = user["demo_expires_at"]
+            if isinstance(expiry_time, str):
+                expiry_time = datetime.fromisoformat(expiry_time)
+            
+            if datetime.now(timezone.utc) >= expiry_time:
+                raise HTTPException(
+                    status_code=401, 
+                    detail="demo_expired",
+                    headers={"X-Error-Type": "demo_expired"}
+                )
+    
+    # Check phone verification for non-demo, non-admin users
+    if not user.get("is_demo") and not user.get("is_admin"):
+        if not user.get("phone_verified", False):
+            raise HTTPException(
+                status_code=403, 
+                detail="phone_verification_required",
+                headers={"X-Error-Type": "phone_verification_required"}
+            )
+    
+    # Check if user is banned
+    if user.get("is_banned", False):
+        raise HTTPException(status_code=403, detail="Váš účet byl zablokován administrátorem")
+    
+    try:
+        # Extract request data
+        user_message = request.get("message", "")
+        conversation_history = request.get("messages", [])
+        session_id = request.get("session_id") or str(uuid.uuid4())
+        master_prompt = request.get("master_prompt", "")
+        
+        # Validate input
+        if not user_message or len(user_message) > 4000:
+            raise HTTPException(status_code=400, detail="Invalid message length")
+        
+        if len(conversation_history) > 50:
+            raise HTTPException(status_code=400, detail="Too many messages")
+        
+        # Estimate tokens (rough)
+        estimated_tokens = 1500
+        await require_tokens(user, estimated_tokens)
+        
+        # Build conversation context
+        conversation_context = []
+        for msg in conversation_history[-10:]:  # Last 10 messages
+            conversation_context.append({
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", "")
+            })
+        
+        # Create chat instance with Master prompt as system message
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message=master_prompt
+        ).with_model("openai", "gpt-4.1")
+        
+        # Send user message
+        user_msg = UserMessage(text=user_message)
+        
+        try:
+            response = await asyncio.wait_for(
+                chat.send_message(user_msg),
+                timeout=45.0
+            )
+            
+            response_text = response.strip()
+            
+            # Detect if this is the final prompt output
+            # Keywords: "Here is your", "optimized prompt", "MASTER_AGENT", code blocks
+            is_final_output = any([
+                "Here is your" in response_text and "prompt" in response_text.lower(),
+                "MASTER_AGENT" in response_text,
+                "```" in response_text and len(response_text) > 500,
+                "Final prompt" in response_text.lower(),
+                "optimalizovaný prompt" in response_text.lower()
+            ])
+            
+            # Deduct tokens
+            tokens_used = len(response_text) // 4
+            await deduct_tokens(
+                user["id"],
+                tokens_used,
+                f"Chat session {session_id}",
+                tokens_used
+            )
+            
+            # If final output detected, save the prompt
+            prompt_id = None
+            if is_final_output:
+                try:
+                    # Extract prompt name from conversation or generate default
+                    prompt_name = "Omega Agent"
+                    for msg in reversed(conversation_history):
+                        if msg.get("role") == "user" and len(msg.get("content", "")) > 10:
+                            prompt_name = msg["content"][:50]
+                            break
+                    
+                    # Save to database
+                    prompt_doc = {
+                        "id": str(uuid.uuid4()),
+                        "user_id": user["id"],
+                        "name": prompt_name,
+                        "description": {
+                            "business_context": user_message[:200],
+                            "clarifying_answers": "",
+                            "optimization_suggestions": ""
+                        },
+                        "master_prompt": response_text,
+                        "conversation_summary": "\n".join([f"{m.get('role')}: {m.get('content', '')[:100]}" for m in conversation_history[-5:]]),
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.generated_prompts.insert_one(prompt_doc)
+                    prompt_id = prompt_doc["id"]
+                except Exception as save_error:
+                    print(f"Error saving prompt: {save_error}")
+            
+            return {
+                "response": response_text,
+                "session_id": session_id,
+                "is_final_output": is_final_output,
+                "prompt_id": prompt_id,
+                "tokens_used": tokens_used
+            }
+            
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Request timeout - please try again")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred during chat")
+
+# Omega Agent Generator Endpoint (LEGACY - 3-stage flow)
 @api_router.post("/generate", response_model=GenerateResponse)
 async def generate_omega_prompt(request: GenerateRequest, http_request: Request):
     """
