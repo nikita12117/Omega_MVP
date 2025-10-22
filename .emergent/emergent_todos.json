@@ -1,22 +1,26 @@
 [
   {
-    "content": "Update Demo.jsx with complete gating logic (demo expiry, phone verification, admin bypass)",
+    "content": "Create new /api/chat endpoint for natural Master Agent conversation",
+    "status": "completed"
+  },
+  {
+    "content": "Update Demo.jsx to use /api/chat instead of /api/generate (3-stage legacy)",
     "status": "in_progress"
   },
   {
-    "content": "Streamline ChatInterface - remove excessive clarifying question loops, make conversation natural",
+    "content": "Add gating logic to Demo.jsx (unauthenticated, demo expiry, phone verification)",
     "status": "pending"
   },
   {
-    "content": "Integrate FeedbackDialog after successful generation in ChatInterface",
+    "content": "Integrate FeedbackDialog after successful generation (is_final_output=true)",
     "status": "pending"
   },
   {
-    "content": "Integrate GoogleUpgradeDialog after feedback submission",
+    "content": "Integrate GoogleUpgradeDialog after feedback submission for demo users",
     "status": "pending"
   },
   {
-    "content": "Add demo expiry countdown timer to Demo page header",
+    "content": "Add demo expiry countdown badge to Demo page header",
     "status": "pending"
   },
   {
