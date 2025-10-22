@@ -275,24 +275,12 @@ const MyAgents = () => {
 
                   {/* v-9 Transform Button (only if not already transformed) */}
                   {!agent.has_v9 && (
-                    <Button
-                      data-testid={`v9-transform-${agent.id}`}
+                    <V9TransformButton
                       onClick={(e) => handleV9Transform(agent.id, e)}
+                      isTransforming={transformingAgentId === agent.id}
                       disabled={transformingAgentId === agent.id}
-                      className="w-full bg-gradient-to-r from-[#1e3a8a] to-[#06d6a0] hover:from-[#2a4aa0] hover:to-[#07f0b8] text-white font-semibold h-9 text-sm"
-                    >
-                      {transformingAgentId === agent.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                          Transformuji...
-                        </>
-                      ) : (
-                        <>
-                          <Brain className="mr-2 h-3 w-3" />
-                          v-9 Transformace
-                        </>
-                      )}
-                    </Button>
+                      className="w-full bg-[#10172a] border border-[#25365a] hover:border-[#06d6a0]/50 text-white font-semibold h-9 text-sm"
+                    />
                   )}
                 </Card>
               </motion.div>
