@@ -17,7 +17,18 @@ import json
 logger = logging.getLogger(__name__)
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+api_key = os.environ.get('OPENAI_API_KEY')
+
+# Check if using OpenRouter (keys start with sk-or-)
+if api_key and api_key.startswith('sk-or-'):
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://openrouter.ai/api/v1"
+    )
+    logger.info("Using OpenRouter API")
+else:
+    client = OpenAI(api_key=api_key)
+    logger.info("Using OpenAI API")
 
 # Constants
 DEFAULT_MODEL = "gpt-4o"  # Using GPT-4o which is available
